@@ -13,6 +13,7 @@ import {
   NotebookIcon,
   ReceiptText,
   ReceiptIcon,
+  LogOut,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -29,6 +30,7 @@ import ServiceComponent from "./ServiceNotes";
 import ProgressNotePage from "./ProgressNote";
 import BillDetailsPage from "./BillDetails";
 import IPDOperationRecords from "./IPDOperationRecords";
+import IPDDischargeSummary from "./DischargeSummary";
 
 /* ========================================================= */
 
@@ -43,6 +45,7 @@ type TabKey =
   | "progress-note"
   | "bill-details"
   | "operation-records"
+  | "discharge-summary"
   ;
 
 /* ========================================================= */
@@ -181,6 +184,12 @@ const ConsultantNotes: React.FC = () => {
               active={activeTab === "operation-records"}
               onClick={() => handleTabClick("operation-records")}
             />
+            <ToolbarIcon
+              label="Discharge Summary"
+              icon={<LogOut className="w-5 h-5" />}
+              active={activeTab === "discharge-summary"}
+              onClick={() => handleTabClick("discharge-summary")}
+            />
             <ToolbarIcon 
               label="Refer SSD"
               icon={<ArrowRightLeft className="w-5 h-5" />}
@@ -243,6 +252,10 @@ const ConsultantNotes: React.FC = () => {
 
       {activeTab === "operation-records" && patientId && (
         <IPDOperationRecords  />
+      )}
+
+      {activeTab === "discharge-summary" && patientId && (
+        <IPDDischargeSummary  />
       )}
 
       {activeTab === "referssd" &&  patientId && (

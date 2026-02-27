@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Calendar,
   Download,
@@ -17,6 +17,8 @@ import { useDischargedPatients } from "@/queries/discharged.queries";
 import { dischargedPatientResponse } from "@/types/patient.type";
 import { ThreeDots } from "react-loader-spinner";
 import { useRouter } from "next/navigation";
+import { AutoSizer, Table, Column } from 'react-virtualized';
+import 'react-virtualized/styles.css';
 
 interface DischargedPatientsProps {
   onClose: () => void;
@@ -39,6 +41,11 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
   // Applied filters for query
   const [appliedFilters, setAppliedFilters] = useState(filters);
 
+  useEffect(() => {
+    const timeout = setTimeout(() => setAppliedFilters(filters), 300);
+    return () => clearTimeout(timeout);
+  }, [filters]);
+
   const { data, isFetching } = useDischargedPatients(authToken, appliedFilters);
 
   const dischargedPatients = data?.data ?? [];
@@ -49,12 +56,6 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
-  // Apply filters
-  const handleShowResults = () => {
-    console.log(filters);
-    setAppliedFilters(filters);
-  }
-  console.log(appliedFilters);
 
   // Reset filters
   const handleResetFilters = () => {
@@ -73,6 +74,42 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
     sessionStorage.setItem('selectedPatietnt', JSON.stringify(Patient));
     router.push(`/consultant-notes/${Patient.Mrno}`);
   }
+
+  // Define this once, reuse it in both header and rowRenderer
+  const gridClass = "grid w-full grid-cols-[1fr_1.5fr_1.8fr_1fr_1.3fr_1.4fr_1.4fr_0.8fr] items-center";
+
+  const rowRenderer = ({ index, key, style }: any) => {
+    const patient = dischargedPatients[index];
+    if (!patient) return null;
+
+    return (
+      <div
+        key={key}
+        style={style}
+        className={`${gridClass} border-b cursor-pointer hover:bg-blue-50 text-sm`}
+        onClick={() => openConsultantNotes(patient)}
+      >
+        <div className="px-4 font-semibold text-sm">IPD{patient.IPDCODE || "N/A"} / {patient.Mrno}</div>
+        <div className="px-4">
+          <div className="font-semibold text-slate-800 text-lg">{patient.PATIENTNAME || "N/A"}</div>
+          <div className="text-m text-slate-500">{patient.Age || "N/A"} Years</div>
+        </div>
+        <div className="px-4 flex flex-col gap-1">
+          <span className="flex gap-1 items-center"><Phone className="w-3 h-3 shrink-0" /> {patient.Mobile || "N/A"}</span>
+          <span className="flex gap-1 items-center text-xs text-slate-500"><MapPin className="w-3 h-3 shrink-0" /> {patient.ADDRESS || "N/A"}</span>
+        </div>
+        <div className="px-4 flex gap-1 items-center"><Bed className="w-4 h-4 shrink-0" /> {patient.WARD || "N/A"}</div>
+        <div className="px-4 flex gap-1 items-center"><Stethoscope className="w-4 h-4 shrink-0" /> {patient.CONSULTANT || "N/A"}</div>
+        <div className="px-4 flex gap-1 items-center">
+          <Calendar className="w-4 h-4 shrink-0" /> {patient.ADMITTEDTIME_E || "N/A"} / {patient.ADMITTEDTIME_N || "N/A"}
+        </div>
+        <div className="px-4 flex gap-1 items-center">
+          <Calendar className="w-4 h-4 shrink-0" /> {patient.DISCHARGEDATE_E || "N/A"} / {patient.DISCHARGEDATE_N || "N/A"}
+        </div>
+        <div className="px-4 flex gap-1 items-center"><Clock className="w-4 h-4 shrink-0" /> {patient.STAYDAYS || "N/A"}</div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -173,7 +210,7 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
             {/* Action Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={handleShowResults}
+                onClick={() => setAppliedFilters(filters)}
                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <Search className="w-4 h-4" /> Show Results
@@ -221,79 +258,37 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
             </div>
           </div>
 
-          {/* Discharged Patients Table */}
-          <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto max-h-[600px]">
-              <table className="max-w-full">
-                <thead className="sticky top-0 w-full bg-slate-100 border-b">
-                  <tr className="text-left text-slate-700">
-                    <th className="px-6 py-4">IPD Code</th>
-                    <th className="px-6 py-4">Patient Info</th>
-                    <th className="px-6 py-4">Contact</th>
-                    <th className="px-6 py-4">Ward</th>
-                    <th className="px-6 py-4">Consultant</th>
-                    <th className="px-6 py-4">Admission Date</th>
-                    <th className="px-6 py-4">Discharge Date</th>
-                    <th className="px-6 py-4">StayDays</th>
-                  </tr>
-                </thead>
+          {/* Virtualized Patient Table */}
+         <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
+            {/* Sticky Header */}
+            <div className={`${gridClass} bg-blue-600 text-white font-semibold text-lg`}>
+              <div className="px-4 py-2">IPD Code</div>
+              <div className="px-4 py-2">Patient Info</div>
+              <div className="px-4 py-2">Contact</div>
+              <div className="px-4 py-2">Ward</div>
+              <div className="px-4 py-2">Consultant</div>
+              <div className="px-4 py-2">Admission Date</div>
+              <div className="px-4 py-2">Discharge Date</div>
+              <div className="px-4 py-2">Stay Days</div>
+            </div>
 
-                <tbody className="divide-y">
-                  {dischargedPatients.length > 0 ? (
-                    dischargedPatients.map((patient: dischargedPatientResponse, index: number) => (
-                      <tr key={index} 
-                      onClick={()=> openConsultantNotes(patient)}
-                      className="hover:bg-blue-50">
-                        <td className="px-6 py-4 text-sm font-semibold">IPD{patient.IPDCODE || "N/A"} / {patient.Mrno}</td>
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-slate-800">{patient.PATIENTNAME || "N/A"}</div>
-                          <div className="text-slate-500 text-xs">{patient.Age || "N/A"} Years</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1">
-                            <Phone className="w-3.5 h-3.5" /> {patient.Mobile || "N/A"}
-                          </div>
-                          <div className="flex items-center gap-1 text-slate-500 mt-1">
-                            <MapPin className="w-3.5 h-3.5" /> {patient.ADDRESS || "N/A"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full">
-                            <Bed className="w-3.5 h-3.5" /> {patient.WARD || "N/A"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-sm text-purple-700 rounded-full">
-                            <Stethoscope className="w-3.5 h-3.5" /> {patient.CONSULTANT || "N/A"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4"> 
-                        <div className="font-medium">{patient.ADMITTEDTIME_E || "N/A"}</div>
-                         <div className="text-xs text-slate-500">{patient.ADMITTEDTIME_N || "N/A"}</div> 
-                        </td> 
-                        <td className="px-6 py-4"> 
-                          <div className="font-medium">{patient.DISCHARGEDATE_E || "N/A"}</div> 
-                          <div className="text-xs text-slate-500">{patient.DISCHARGEDATE_N || "N/A"}</div> 
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold">
-                            <Clock className="w-3.5 h-3.5" /> {patient.STAYDAYS || "N/A"} Days
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
-                        No discharged patients found. Adjust filters and click "Show Results".
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div style={{ height: 600 }}>
+              <AutoSizer>
+                {({ width, height }) => (
+                  <Table
+                    width={width}
+                    height={height}
+                    headerHeight={0} // we’re handling our own header
+                    rowHeight={80}
+                    rowCount={dischargedPatients.length}
+                    rowGetter={({ index }) => dischargedPatients[index]}
+                    overscanRowCount={5}
+                    rowRenderer={rowRenderer}
+                  />
+                )}
+              </AutoSizer>
             </div>
           </div>
-
         </div>
       </div>
     </>

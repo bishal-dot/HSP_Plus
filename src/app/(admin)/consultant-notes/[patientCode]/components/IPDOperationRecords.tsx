@@ -1,5 +1,6 @@
 import { useAuthToken } from "@/context/AuthContext";
 import { useOperationRecord } from "../queries/operaationrecord.queries";
+import { CircleOff, FileX } from "lucide-react";
 
 const IPDOperationRecords = () => {
 
@@ -10,7 +11,10 @@ const IPDOperationRecords = () => {
     console.log("Operation Records", operationRecords);
     return(
         <div>
-            <h1>IPD Operation Records</h1>
+            <div className="flex flex-col items-center justify-center gap-5 mt-10">
+                <CircleOff size={64} className="text-slate-800" />
+                <span className="text-2xl font-semibold text-slate-800">No Operation Records</span>
+            </div>
         </div>
     );
 };

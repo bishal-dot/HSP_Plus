@@ -1,15 +1,16 @@
-import { getOperationRecordFromDb } from "@/services/operationrecord.service";
+import { getOperationRecordByMrno } from "@/controllers/operationrecord.controller";
+import { fetchOperationRecordFromDb, getOperationRecordFromDb } from "@/services/operationrecord.service";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
     request:NextRequest,
-    { params }: { params: { MrNO: string } }
+    { params }: { params: { mrno: string } }
 ) {
-    try{
-        const { MrNO } = await params;
-        const data = await getOperationRecordFromDb(MrNO);
+        // const data = await getOperationRecordFromDb(MrNO);
+        const tokenNo = request.headers.get('Authorization')?.replace('Bearer ', '') || '';
+        const mrno = params.mrno;
+
+        console.log("Token No", tokenNo, "MRNO", mrno);
+        const data = await getOperationRecordByMrno(tokenNo, mrno);
         return NextResponse.json(data);
-    } catch (error: any) {
-        return NextResponse.json({ message: error.message || "Failed to fetch" }, { status: 500 });
-    }
 }

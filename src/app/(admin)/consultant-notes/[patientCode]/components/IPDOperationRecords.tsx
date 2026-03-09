@@ -2,13 +2,18 @@ import { useAuthToken } from "@/context/AuthContext";
 import { useOperationRecord } from "../queries/operaationrecord.queries";
 import { CircleOff, FileX } from "lucide-react";
 
-const IPDOperationRecords = () => {
+interface props {
+    PatientCode: string;
+}
+
+const IPDOperationRecords: React.FC<props> = ({PatientCode}) => {
 
     const { authToken } = useAuthToken();
-    const MrNO: string = '0126104';
-    const { data:operationRecords} = useOperationRecord(authToken, MrNO);
+    const { data: operationRecords, error, isLoading} = useOperationRecord(authToken, PatientCode);
 
-    console.log("Operation Records", operationRecords);
+    console.log("Jaja",PatientCode)
+
+    console.log("Operation Records", operationRecords, error, isLoading);
     return(
         <div>
             <div className="flex flex-col items-center justify-center gap-5 mt-10">

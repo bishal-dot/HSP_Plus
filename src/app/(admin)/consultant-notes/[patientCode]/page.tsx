@@ -8,25 +8,25 @@ export default function ConsultantNotesPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen px-6 mb-10">
-      <div className="flex flex-row-reverse justify-between">
+    <div className="min-h-screen px-6 mb-10 mt-5">
+      <div className="flex items-center py-4">
         <button
           onClick={() => router.back()}
-          className="mb-4 text-xl text-blue-600 hover:cursor-pointer hover:text-blue-700"
+          className="group flex items-center text-blue-600 hover:text-blue-700 transition-all duration-300 ease-in-out"
         >
-          ← Back to Dashboard
+          <span className="text-xl font-semibold">←</span>
+          
+          <span className="ml-2 max-w-0 overflow-hidden group-hover:max-w-xs font-semibold transition-all duration-300 whitespace-nowrap">
+            Back
+          </span>
         </button>
-        <h1 className="text-2xl font-semibold mb-2">Consultant Notes</h1>
+
+        <h1 className="text-3xl font-semibold text-slate-800 ml-4">
+          Consultant Notes
+        </h1>
       </div>
-      
-      {/* Your consultant notes content goes here */}
-      {/* {patientCode ? (
-        <PreviousConsultantNotes patientCode={patientCode} />
-      ) : (
-      <p>No Patient Code provided</p>
-      )
-    } */}
-     <ConsultantNotes />
+
+      <ConsultantNotes />
     </div>
   );
 }

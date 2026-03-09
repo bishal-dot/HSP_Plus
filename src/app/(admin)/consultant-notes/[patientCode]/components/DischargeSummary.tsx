@@ -2,13 +2,16 @@ import { useAuthToken } from "@/context/AuthContext";
 import { useDischargeSummary } from "../queries/dischargeSummary.queries";
 import { CircleOff } from "lucide-react";
 
-const IPDDischargeSummary = () => {
+interface props{
+    MrNO: string
+}
+
+const IPDDischargeSummary:React.FC<props> = ({MrNO}) => {
 
     const { authToken } = useAuthToken();
-    const MrNO: string = '0126104';
     const { data:dischargeSummary} = useDischargeSummary(authToken, MrNO); 
 
-    console.log("Operation Records", dischargeSummary);
+    console.log("Discharge Summary", dischargeSummary);
     return(
         <div>
             <div className="flex flex-col items-center justify-center gap-5 mt-10">

@@ -26,19 +26,10 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/dashboard",
-   // subItems: [
-      // { name: "Consultant", path: "/dashboard/consultant", pro:false },
-      // { name: "Pathology", path: "/Pathology", pro:false },
-      // { name: "Nursing", path: "/Nursing", pro:false },
-      // { name: "Administrator", path: "/Administrator", pro:false },
-      // { name: "Physiotherapy", path: "/Physiotherapy", pro:false },
-      // { name: "Occupational Therapy", path: "/Occupational Therapy", pro:false },
-      // { name: "Finance", path: "/Finance", pro:false },
-      // { name: "Store", path: "/Store", pro:false },
-      // { name: "P&O", path: "/P&O", pro:false },
-      // { name: "Speech Therapy", path: "/SpeechTherapy", pro:false },
-      // { name: "Leprosy", path: "/Leprosy", pro:false },
-   // ],
+   subItems: [
+      { name: "OPD", path: "/dashboard/opd", pro:false },
+      { name: "IPD", path: "/dashboard/ipd", pro:false },
+   ],
     //path: "/dashboard",
 
   },
@@ -127,7 +118,7 @@ const AppSidebar: React.FC = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <span className={`menu-item-text`}>{nav.name}</span>
               )}
-              {/* {(isExpanded || isHovered || isMobileOpen) && (
+              {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
                   className={`ml-auto w-5 h-5 transition-transform duration-200  ${openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
@@ -135,7 +126,7 @@ const AppSidebar: React.FC = () => {
                     : ""
                     }`}
                 />
-              )} */}
+              )} 
             </button>
           ) : (
             nav.path && (

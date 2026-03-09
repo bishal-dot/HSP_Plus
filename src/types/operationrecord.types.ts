@@ -37,3 +37,7 @@ export interface OperationRecordType{
     Histopathology: string;
     RegType: number;
 }
+
+export interface OperationRecordTypeRequest{
+    mrno: string;
+}

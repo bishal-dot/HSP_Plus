@@ -71,6 +71,7 @@ const ConsultantNotes: React.FC = () => {
     setActiveTab(tab);
   };
 
+  console.log("Patient Info", patientInfo);
 
   const getPatientRegCode = (patientInfo: any) => {
     if('TokenNo' in patientInfo && patientInfo.TokenNo) return patientInfo.TokenNo;
@@ -112,7 +113,7 @@ const ConsultantNotes: React.FC = () => {
             />
             <Info
               label="Consultant"
-              value={patientInfo?.ConsultingDoctor || patientInfo?.BlockedBy  || "-"}
+              value={patientInfo?.ConsultingDoctor || patientInfo?.BlockedBy  || patientInfo?.CONSULTANT || "-"}
             />
             <Info
               label="Phone"
@@ -251,11 +252,11 @@ const ConsultantNotes: React.FC = () => {
       )}
 
       {activeTab === "operation-records" && patientId && (
-        <IPDOperationRecords  />
+        <IPDOperationRecords PatientCode={patientInfo.MrNO} />
       )}
 
       {activeTab === "discharge-summary" && patientId && (
-        <IPDDischargeSummary  />
+        <IPDDischargeSummary MrNO={patientInfo.MrNO} />
       )}
 
       {activeTab === "referssd" &&  patientId && (

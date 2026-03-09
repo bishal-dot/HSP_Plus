@@ -5,11 +5,12 @@ export const fetchDischargeSummaryByMRNO = async (
     MrNO: string
 ): Promise<DischargeSummaryType[]> => {
     const response = await fetch(`/api/inpatients/dischargeSummary/${MrNO}`, {
-        method: "GET",
+        method: "POST",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({ MrNO: MrNO }),
         cache: "no-cache",
     });
 

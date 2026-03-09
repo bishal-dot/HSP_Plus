@@ -55,3 +55,18 @@ export interface DischargeSummaryType {
   AODSTNote: string | null;
   AODNursingNote: string | null;
 }
+
+export interface DischargeSummaryTypeRequest{
+  Mrno: string;
+}
+
+export interface DischargeSummaryTypeResponse{
+  DischargeID: number;
+  IPDCode: string;
+  DischargeType: string;
+  PreOPDiagnosis: string;
+  Diagnosis: string;
+  RX:string;
+  ADVICE:string;
+  Date:string;
+}

@@ -30,8 +30,13 @@ const IPDDashboard: React.FC = () => {
 
   const openConsultantNotes = (Patient: any) => {
     sessionStorage.setItem('selectedPatient', JSON.stringify(Patient));
-    const faculty = Patient.FacultyName;
-    router.push(`/consultant-notes/${Patient.PatientCode}`); 
+    const faculty = Patient.wardName;
+    if(faculty === "Ear Ward"){
+      router.push(`/consultant-notes/ent/${Patient.PatientCode}`)
+    }
+    else{
+      router.push(`/consultant-notes/${Patient.PatientCode}`); 
+    }
   };
 
   const handleSort = (key: string) => {

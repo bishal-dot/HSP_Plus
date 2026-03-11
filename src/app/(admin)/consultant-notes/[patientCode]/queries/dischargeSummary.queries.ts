@@ -7,13 +7,14 @@ export const dischargeSummaryKeys = {
     list: (MrNO: string) => [...dischargeSummaryKeys.all, 'list'] as const
 }
 
-export const useDischargeSummary = (token: string | null, MrNO?: string | null) => {
+export const useDischargeSummary = (token: string | null, MrNO: string | null) => {
+    console.log("MRNO inside hook:", MrNO);
     return useQuery<DischargeSummaryType[]>({
         enabled: !!token && !!MrNO,
-        queryKey: MrNO ? dischargeSummaryKeys.list(MrNO) : dischargeSummaryKeys.all,
+        queryKey: dischargeSummaryKeys.list(MrNO ?? ''),
         queryFn: () => {
             if(!token || !MrNO) throw new Error('Token or MRNO is missing');
-            return fetchDischargeSummaryByMRNO(token!, MrNO);
+            return fetchDischargeSummaryByMRNO(token!, MrNO!);
         },
         staleTime: 1000 * 30
     })

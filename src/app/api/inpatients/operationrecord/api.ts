@@ -13,6 +13,7 @@ export const fetchOperationRecordByMrNO = async (
         body: JSON.stringify({ mrno: mrno }),
         cache: "no-cache",
     });
+    console.log("Token No", token, "MRNO", mrno);
 
     if (!response.ok) throw new Error("Failed to fetch Operation Record");
     const json = await response.json();

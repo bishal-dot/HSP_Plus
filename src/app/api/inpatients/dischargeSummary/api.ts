@@ -13,7 +13,7 @@ export const fetchDischargeSummaryByMRNO = async (
         body: JSON.stringify({ MrNO: MrNO }),
         cache: "no-cache",
     });
-
+    console.log("Token No", token, "MRNO", MrNO);
     if(!response.ok) throw new Error("Failed to fetch Discharge Summary");
     const json = await response.json();
     return json.data ?? [];

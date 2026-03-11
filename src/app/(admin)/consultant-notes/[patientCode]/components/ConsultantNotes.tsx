@@ -17,22 +17,11 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-
-import PreviousConsultantNotes from "./ConsultantNotesHistory";
-import PrescriptionForm from "./PrescriptionForm";
-import LaboratoryRecords from "./LaboratoryRecords";
-import ImagingRecords from "./ImagingRecords";
-import PatientClinicalRecordPage from "./PatientCase";
-
 import { useAuthToken } from "@/context/AuthContext";
-import SsdReferToPatientPage from "@/app/(admin)/ssd-estimate/components/SsdReferToPatientPage";
-import ServiceComponent from "./ServiceNotes";
-import ProgressNotePage from "./ProgressNote";
-import BillDetailsPage from "./BillDetails";
-import IPDOperationRecords from "./IPDOperationRecords";
-import IPDDischargeSummary from "./DischargeSummary";
 
-/* ========================================================= */
+import dynamic from "next/dynamic";
+import SsdReferToPatientPage from "@/app/(admin)/ssd-estimate/components/SsdReferToPatientPage";
+
 
 type TabKey =
   | "consultant-notes"
@@ -51,6 +40,58 @@ type TabKey =
 /* ========================================================= */
 
 const ConsultantNotes: React.FC = () => {
+
+
+  const PreviousConsultantNotes = dynamic(
+    () => import("./ConsultantNotesHistory"),
+    { loading: () => <p className="p-6">Loading consultant notes...</p> }
+  );
+
+  const PrescriptionForm = dynamic(
+    () => import("./PrescriptionForm"),
+    { loading: () => <p className="p-6">Loading prescription...</p> }
+  );
+
+  const LaboratoryRecords = dynamic(
+    () => import("./LaboratoryRecords"),
+    { loading: () => <p className="p-6">Loading laboratory records...</p> }
+  );
+
+  const ImagingRecords = dynamic(
+    () => import("./ImagingRecords"),
+    { loading: () => <p className="p-6">Loading imaging records...</p> }
+  );
+
+  const PatientClinicalRecordPage = dynamic(
+    () => import("./PatientCase"),
+    { loading: () => <p className="p-6">Loading patient case...</p> }
+  );
+
+  const ServiceComponent = dynamic(
+    () => import("./ServiceNotes"),
+    { loading: () => <p className="p-6">Loading services...</p> }
+  );
+
+  const ProgressNotePage = dynamic(
+    () => import("./ProgressNote"),
+    { loading: () => <p className="p-6">Loading progress notes...</p> }
+  );
+
+  const BillDetailsPage = dynamic(
+    () => import("./BillDetails"),
+    { loading: () => <p className="p-6">Loading billing details...</p> }
+  );
+
+  const IPDOperationRecords = dynamic(
+    () => import("./IPDOperationRecords"),
+    { loading: () => <p className="p-6">Loading operation records...</p> }
+  );
+
+  const IPDDischargeSummary = dynamic(
+    () => import("./DischargeSummary"),
+    { loading: () => <p className="p-6">Loading discharge summary...</p> }
+  );
+
   const { patientCode } = useParams<{ patientCode: string }>();
   const { authToken } = useAuthToken();
   const router = useRouter();
@@ -65,13 +106,17 @@ const ConsultantNotes: React.FC = () => {
   }, []);
 
   const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+
+  const patientType = patientInfo ? (patientInfo.IPDCODE ? "ipd" : "opd") : null;
+  console.log("Patient Type:", patientType);
+
+  const patientNo = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+
   const handleTabClick = (tab: TabKey) => {
     if (!patientId) return;
     if (tab !== "consultant-notes") setShowHistory(false);
     setActiveTab(tab);
   };
-
-  console.log("Patient Info", patientInfo);
 
   const getPatientRegCode = (patientInfo: any) => {
     if('TokenNo' in patientInfo && patientInfo.TokenNo) return patientInfo.TokenNo;
@@ -137,12 +182,14 @@ const ConsultantNotes: React.FC = () => {
               }}
               dblClick={() => setShowHistory(false)}
             />
-            <ToolbarIcon
-              label="Prescription"
-              icon={<Pill className="w-5 h-5" />}
-              active={activeTab === "prescription"}
-              onClick={() => handleTabClick("prescription")}
-            />
+            { patientType === "opd" && ( 
+              <ToolbarIcon
+                label="Prescription"
+                icon={<Pill className="w-5 h-5" />}
+                active={activeTab === "prescription"}
+                onClick={() => handleTabClick("prescription")}
+              />
+            )}
             <ToolbarIcon
               label="Service"
               icon={<Stethoscope className="w-5 h-5" />}
@@ -161,42 +208,48 @@ const ConsultantNotes: React.FC = () => {
               active={activeTab === "laboratory"}
               onClick={() => handleTabClick("laboratory")}
             />
-            <ToolbarIcon
-              label="Patient Case"
-              icon={<ClipboardList className="w-5 h-5" />}
-              active={activeTab === "patient-case"}
-              onClick={() => handleTabClick("patient-case")}
-            />
-            <ToolbarIcon 
-              label="Progress Note"
-              icon={<NotebookIcon className="w-5 h-5" />}
-              active={activeTab === "progress-note"}
-              onClick={() => handleTabClick("progress-note")}
-            />
-            <ToolbarIcon
-              label="Bill Details"
-              icon={<ReceiptText className="w-5 h-5" />}
-              active={activeTab === "bill-details"}
-              onClick={() => handleTabClick("bill-details")}
-            />
-            <ToolbarIcon
-              label="Operation Records"
-              icon={<ReceiptIcon className="w-5 h-5" />}
-              active={activeTab === "operation-records"}
-              onClick={() => handleTabClick("operation-records")}
-            />
-            <ToolbarIcon
-              label="Discharge Summary"
-              icon={<LogOut className="w-5 h-5" />}
-              active={activeTab === "discharge-summary"}
-              onClick={() => handleTabClick("discharge-summary")}
-            />
+            { patientType === "opd" && (
+              <ToolbarIcon
+                label="Patient Case"
+                icon={<ClipboardList className="w-5 h-5" />}
+                active={activeTab === "patient-case"}
+                onClick={() => handleTabClick("patient-case")}
+              />
+            )}
+            { patientType === "ipd" && (
+              <>
+              <ToolbarIcon 
+                label="Progress Note"
+                icon={<NotebookIcon className="w-5 h-5" />}
+                active={activeTab === "progress-note"}
+                onClick={() => handleTabClick("progress-note")}
+              />
+              <ToolbarIcon
+                label="Bill Details"
+                icon={<ReceiptText className="w-5 h-5" />}
+                active={activeTab === "bill-details"}
+                onClick={() => handleTabClick("bill-details")}
+              />
+              <ToolbarIcon
+                label="Operation Records"
+                icon={<ReceiptIcon className="w-5 h-5" />}
+                active={activeTab === "operation-records"}
+                onClick={() => handleTabClick("operation-records")}
+              />
+              <ToolbarIcon
+                label="Discharge Summary"
+                icon={<LogOut className="w-5 h-5" />}
+                active={activeTab === "discharge-summary"}
+                onClick={() => handleTabClick("discharge-summary")}
+              />
+            </>
+            )}
             <ToolbarIcon 
               label="Refer SSD"
               icon={<ArrowRightLeft className="w-5 h-5" />}
               active={activeTab === "referssd"}
               onClick={() => {
-                if(!patientInfo?.PatientCode) return;
+                if(!patientId) return;
                 const regCode = getPatientRegCode(patientInfo);
                 if(!regCode) return;
 
@@ -224,39 +277,41 @@ const ConsultantNotes: React.FC = () => {
         )
       )}
 
+   
+
       {activeTab === "prescription" && patientId && (
-        <PrescriptionForm patientCode={patientInfo.MRNo} />
+        <PrescriptionForm patientCode={patientId} />
       )}
 
       {activeTab === "services" && patientId && (
-        <ServiceComponent Patientcode={patientInfo.PatientCode} />
+        <ServiceComponent Patientcode={patientId} />
       )}
 
       {activeTab === "imaging" && patientId && (
-        <ImagingRecords Patientcode={patientInfo.PatientCode} />
+        <ImagingRecords Patientcode={patientId} />
       )}
 
       {activeTab === "laboratory" && patientId && (
-        <LaboratoryRecords Patientcode={patientInfo.PatientCode} />
+        <LaboratoryRecords Patientcode={patientId} />
       )}
 
-      {activeTab === "patient-case" && patientId &&
-      <PatientClinicalRecordPage Patientcode={patientInfo.MRNo}/>}
+      {activeTab === "patient-case" && patientId && (
+      <PatientClinicalRecordPage Patientcode={patientId}/>)}
 
       {activeTab === "progress-note" && patientId && (
-        <ProgressNotePage  PatientCode={patientInfo.PatientCode} />
+        <ProgressNotePage  PatientCode={patientId} />
       )}
 
       {activeTab === "bill-details" && patientId && (
-        <BillDetailsPage PatientCode={patientInfo.IPDCODE} />
+        <BillDetailsPage PatientCode={patientNo} />
       )}
 
       {activeTab === "operation-records" && patientId && (
-        <IPDOperationRecords PatientCode={patientInfo.MrNO} />
+        <IPDOperationRecords PatientCode={patientId} />
       )}
 
       {activeTab === "discharge-summary" && patientId && (
-        <IPDDischargeSummary MrNO={patientInfo.MrNO} />
+        <IPDDischargeSummary MrNO={patientId} />
       )}
 
       {activeTab === "referssd" &&  patientId && (

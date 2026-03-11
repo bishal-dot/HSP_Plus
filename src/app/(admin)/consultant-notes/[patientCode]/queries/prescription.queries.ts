@@ -1,7 +1,9 @@
 import { fetchPrescriptionHistory } from "@/app/api/patient/prescription/api";
+import { fetchMedicineListFromDb } from "@/app/api/patient/prescription/medicine/api";
 import { Con_QueryAsync } from "@/lib/db";
-import { PrescriptionHistoryResponse } from "@/types/prescription.type";
+import { MedicineListResponse, PrescriptionHistoryResponse } from "@/types/prescription.type";
 import { useQuery } from "@tanstack/react-query";
+import { error } from "console";
 
 export const prescriptionHistoryKeys = {
     all: ["prescription-history"],
@@ -21,5 +23,21 @@ export const usePrescriptionHistory = (token: string | null, PatientCode?: strin
   })
 }
 
+export const medicineListKeys = {
+  all: ["medicine-list"] as const,
+  list: ( PatientCode: string ) => [...medicineListKeys.all, 'list'] as const
+}
+
+export const useMedicineList = (token: string | null, PatientCode?: string ) => {
+  return useQuery<MedicineListResponse[]>({
+    enabled: !!token && !!PatientCode,
+    queryKey: PatientCode ? medicineListKeys.list(PatientCode) : medicineListKeys.all,
+    queryFn: () => {
+      if(!token || !PatientCode) throw new Error('Token or PatientCode is missing');
+      return fetchMedicineListFromDb(token!, PatientCode);
+    },
+    staleTime: 1000 * 30
+  })
+};
 
 

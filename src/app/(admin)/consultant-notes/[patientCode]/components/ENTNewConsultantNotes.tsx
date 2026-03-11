@@ -17,6 +17,10 @@ import {
   Activity,
   Eye,
   Check,
+  ReceiptIcon,
+  ReceiptText,
+  NotebookIcon,
+  LogOut,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect} from "react";
@@ -30,6 +34,10 @@ import PatientClinicalRecordPage from "./PatientCase";
 import { useAuthToken } from "@/context/AuthContext";
 import SsdReferToPatientPage from "@/app/(admin)/ssd-estimate/components/SsdReferToPatientPage";
 import ServiceComponent from "./ServiceNotes";
+import ProgressNotePage from "./ProgressNote";
+import BillDetailsPage from "./BillDetails";
+import IPDOperationRecords from "./IPDOperationRecords";
+import IPDDischargeSummary from "./DischargeSummary";
 
 /* ========================================================= */
 
@@ -40,7 +48,12 @@ type TabKey =
   | "laboratory"
   | "patient-case"
   | "services"
-  | "referssd";
+  | "referssd"
+  | "progress-note"
+  | "bill-details"
+  | "operation-records"
+  | "discharge-summary"
+  ;
 
   
 interface Procedures { syringingR: boolean; syringingL: boolean; microscopeExam: boolean; nasoendoscopy: boolean; }
@@ -65,6 +78,9 @@ const ENTConsultantNotes: React.FC = () => {
     if (stored) setPatientInfo(JSON.parse(stored));
   }, []);
 
+  const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+  const patientNo = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+
   const handleTabClick = (tab: TabKey) => {
     if (!patientInfo?.PatientCode) return;
     if (tab !== "consultant-notes") setShowHistory(false);
@@ -84,17 +100,17 @@ const ENTConsultantNotes: React.FC = () => {
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="p-5 space-y-4">
           {/* Patient Info */}
-          <div className="grid lg:grid-cols-7 md:grid-cols-4 gap-4">
+           <div className="grid lg:grid-cols-7 md:grid-cols-4 gap-4">
             <Info
               label="Patient Code"
-              value={patientInfo?.PatientCode || "-"}
+              value={patientId || "-"}
               icon={<ClipboardList className="w-5 h-5 text-blue-600" />}
             />
             <Info
               label="Patient"
               value={
                 patientInfo
-                  ? `${patientInfo.FirstName} ${patientInfo.LastName}`
+                  ? `${patientInfo.PatientName || patientInfo.PATIENTNAME || patientInfo.patientname} `
                   : "-"
               }
               icon={<User className="w-5 h-5 text-blue-600" />}
@@ -102,29 +118,29 @@ const ENTConsultantNotes: React.FC = () => {
             <Info
               label="Age / Sex"
               value={
-                patientInfo ? `${patientInfo.Age} / ${patientInfo.Sex}` : "-"
+                patientInfo ? `${patientInfo.Age}` : "-"
               }
             />
             <Info
               label="Department"
-              value={patientInfo?.FacultyName || "-"}
+              value={patientInfo?.FacultyName || patientInfo?.wardName || "-"}
             />
             <Info
               label="Consultant"
-              value={patientInfo?.consultant || "-"}
+              value={patientInfo?.ConsultingDoctor || patientInfo?.BlockedBy  || patientInfo?.CONSULTANT || "-"}
             />
             <Info
               label="Phone"
-              value={patientInfo?.Mobile || "-"}
+              value={patientInfo?.ContactNo ||  patientInfo?.Mobile || "-"}
               icon={<Phone className="w-5 h-5 text-blue-600" />}
             />
             <Info 
               label="Token No"
-              value={patientInfo?.TokenNo || "-"} />
+              value={patientInfo?.TokenNo || patientInfo?.IPDCODE || "-"} />
           </div>
 
           {/* Toolbar */}
-          <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100">
+            <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100">
             <ToolbarIcon
               label="Consultant Notes"
               icon={<FileText className="w-5 h-5" />}
@@ -166,9 +182,33 @@ const ENTConsultantNotes: React.FC = () => {
               onClick={() => handleTabClick("patient-case")}
             />
             <ToolbarIcon 
+              label="Progress Note"
+              icon={<NotebookIcon className="w-5 h-5" />}
+              active={activeTab === "progress-note"}
+              onClick={() => handleTabClick("progress-note")}
+            />
+            <ToolbarIcon
+              label="Bill Details"
+              icon={<ReceiptText className="w-5 h-5" />}
+              active={activeTab === "bill-details"}
+              onClick={() => handleTabClick("bill-details")}
+            />
+            <ToolbarIcon
+              label="Operation Records"
+              icon={<ReceiptIcon className="w-5 h-5" />}
+              active={activeTab === "operation-records"}
+              onClick={() => handleTabClick("operation-records")}
+            />
+            <ToolbarIcon
+              label="Discharge Summary"
+              icon={<LogOut className="w-5 h-5" />}
+              active={activeTab === "discharge-summary"}
+              onClick={() => handleTabClick("discharge-summary")}
+            />
+            <ToolbarIcon 
               label="Refer SSD"
               icon={<ArrowRightLeft className="w-5 h-5" />}
-              active={activeTab === "services"}
+              active={activeTab === "referssd"}
               onClick={() => {
                 if(!patientInfo?.PatientCode) return;
                 const regCode = getPatientRegCode(patientInfo);
@@ -199,23 +239,39 @@ const ENTConsultantNotes: React.FC = () => {
       )}
 
       {activeTab === "prescription" && patientInfo?.PatientCode && (
-        <PrescriptionForm patientCode={patientInfo.PatientCode} />
+        <PrescriptionForm patientCode={patientId} />
       )}
 
       {activeTab === "services" && patientInfo?.PatientCode && (
-        <ServiceComponent Patientcode={patientInfo.PatientCode} />
+        <ServiceComponent Patientcode={patientId} />
       )}
 
       {activeTab === "imaging" && patientInfo?.PatientCode && (
-        <ImagingRecords Patientcode={patientInfo.PatientCode} />
+        <ImagingRecords Patientcode={patientId} />
       )}
 
       {activeTab === "laboratory" && patientInfo?.PatientCode && (
-        <LaboratoryRecords Patientcode={patientInfo.PatientCode} />
+        <LaboratoryRecords Patientcode={patientId} />
       )}
 
       {activeTab === "patient-case" && patientInfo?.PatientCode &&
-      <PatientClinicalRecordPage Patientcode={patientInfo.PatientCode}/>}
+      <PatientClinicalRecordPage Patientcode={patientId}/>}
+
+      {activeTab === "progress-note" && patientId && (
+        <ProgressNotePage  PatientCode={patientId} />
+      )}
+
+      {activeTab === "bill-details" && patientId && (
+        <BillDetailsPage PatientCode={patientNo} />
+      )}
+
+      {activeTab === "operation-records" && patientId && (
+        <IPDOperationRecords PatientCode={patientId} />
+      )}
+
+      {activeTab === "discharge-summary" && patientId && (
+        <IPDDischargeSummary MrNO={patientId} />
+      )}
 
       {activeTab === "referssd" &&  patientInfo?.PatientCode && (
         <SsdReferToPatientPage patientInfo={patientInfo} />

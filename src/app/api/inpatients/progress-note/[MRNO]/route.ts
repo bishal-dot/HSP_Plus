@@ -1,16 +1,18 @@
-import { getProgressNoteByMRNO } from "@/services/progress-note.service";
+
 import { NextRequest, NextResponse } from "next/server";
 import sql from "mssql";
 import { DbParameter, QueryDefault } from "@/lib/db";
 import { Query } from "@tanstack/react-query";
+import { getProgressNoteByMRNO } from "@/controllers/progress-note.controller";
 
 export async function GET(
     request: NextRequest,
     { params }: { params: { MRNO: string } }
 ) {
     try {
+        const tokenNo = request.headers.get('Authorization')?.replace('Bearer ', '') || '';
         const { MRNO } = await params;
-        const data = await getProgressNoteByMRNO(MRNO);
+        const data = await getProgressNoteByMRNO(tokenNo, MRNO);
         return NextResponse.json(data);
     } catch (error: any) {
         return NextResponse.json(

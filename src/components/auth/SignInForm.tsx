@@ -211,7 +211,7 @@ export default function SignInForm() {
           onClose={(panel) => {
             setShowPanelModal(false);
             if (panel === 'consultant') {
-              router.push('/dashboard'); // replace with your route
+              router.push('/dashboard/opd'); // replace with your route
             } else {
               router.push('/patientdocument'); // replace with your route
             }

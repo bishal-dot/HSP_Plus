@@ -7,13 +7,15 @@ export const operatioRecordkeys = {
     byMrNO: (mrno: string) => [...operatioRecordkeys.all, "byMrNO", mrno] as const,
 };
 
-export const useOperationRecord = (token: string | null, mrno?: string | null) => {
+export const useOperationRecord = (token: string | null, mrno: string | null) => {
+    console.log("MRNO inside hook:", mrno);
     return useQuery<OperationRecordType[]>({
         enabled: !!token && !!mrno,
-        queryKey: mrno ? operatioRecordkeys.byMrNO(mrno) : operatioRecordkeys.all,
+        queryKey: operatioRecordkeys.byMrNO(mrno ?? ""),
+        
         queryFn: () => {
             if (!token || !mrno) throw new Error("Token or MRNO is missing");
-            return fetchOperationRecordByMrNO(token!, mrno);
+            return fetchOperationRecordByMrNO(token!, mrno!);
         },
         staleTime: 1000 * 30,
     })

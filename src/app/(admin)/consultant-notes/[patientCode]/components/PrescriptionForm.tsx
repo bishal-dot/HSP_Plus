@@ -12,8 +12,8 @@ import {
   Trash2,
   Loader2
 } from "lucide-react";
-import { useState } from "react";
-import { usePrescriptionHistory } from "../queries/prescription.queries";
+import { useEffect, useState } from "react";
+import { useMedicineList, usePrescriptionHistory } from "../queries/prescription.queries";
 import { Medication, PrescriptionFormRequest } from "@/types/prescription.type";
 import { usePrescriptionMaster } from "@/queries/master.queries";
 
@@ -42,19 +42,53 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
   const [timePeriod, setTimePeriod] = useState("Day(s)");
   const [selectedInstructions, setSelectedInstructions] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
+  const [medicineSearch, setMedicineSearch] = useState("");
+  const [filteredMedicines, setFilteredMedicines] = useState<any[]>([]);
+  const [selectedMedicineId, setSelectedMedicineId] = useState<number | null>(null);
 
   // 3. QUERIES (Fetching from your database tables)
   const { data: prescriptionHistory, isLoading: isHistoryLoading, refetch } = usePrescriptionHistory(authToken, patientCode);
   const { data: masters, isLoading: isMasterLoading } = usePrescriptionMaster(authToken);
 
+  const { data: drugs, isLoading: isDrugLoading } = useMedicineList(authToken, patientCode);
+
+  // console.log("Medicines", drugs);
+
   // Extracting master data from the API response
   const masterRoutes = masters?.routes || [];
   const masterFrequencies = masters?.frequency || [];
   const masterInstructions = masters?.instructions || [];
-  console.log("Master Data:", masters);
+  // console.log("Master Data:", masters);
+
+  useEffect(() => {
+    if(!medicineSearch || !drugs) {
+      setFilteredMedicines([]);
+      return;
+    }
+
+    const search = medicineSearch.toLowerCase();
+
+    const filtered = drugs.filter((med:any) => 
+      med.Name?.toLowerCase().includes(search) || 
+      med.Particular?.toLowerCase().includes(search)
+    );
+
+    setFilteredMedicines(filtered.slice(0, 15));
+  }, [medicineSearch, drugs]);
+
+  const handleSearchMedicine = (med:any) => {
+    setDrugName(med.Name);
+    setMedicineSearch(med.Name);
+
+    setSelectedMedicineId(med.itemid);
+
+    setFilteredMedicines([]);
+  };
 
   const handleClearForm = () => {
     setDrugName("");
+    setMedicineSearch("");
+    setSelectedMedicineId(null);
     setDose("");
     setSelectedFrequency("");
     setSelectedRoute("");
@@ -154,8 +188,8 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
         <div className="grid lg:grid-cols-2 gap-8">
           
           {/* LEFT PANEL: FORM ENTRY */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="space-y-6 ">
+            <div className="bg-white rounded-2xl shadow-sm border relative border-slate-200 overflow-hidden">
               <div className="bg-teal-600 px-6 py-4 flex items-center gap-3 text-white">
                 <Pill className="w-5 h-5" />
                 <h2 className="font-bold">New Medication</h2>
@@ -170,11 +204,26 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
                 </label>
                 <input
                   type="text"
-                  value={drugName}
-                  onChange={(e) => setDrugName(e.target.value)}
-                  placeholder="e.g. Paracetamol 500mg"
+                  value={medicineSearch}
+                  onChange={(e) => setMedicineSearch(e.target.value)}
+                  placeholder="Search Drugs..."
                   className="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-teal-500"
                 />
+
+                {filteredMedicines.length > 0 && (
+                  <div className="absolute z-50 w-full bg-white border rounded-xl shadow-lg mt-1 max-h-60 overflow-y-auto">
+                    {filteredMedicines.map((med:any)=> (
+                      <div 
+                        key={med.itemid}
+                        onClick={() => handleSearchMedicine(med)}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-teal-50 border-b last:border-b-0"
+                      >
+                        {med.Name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
               </div>
 
 

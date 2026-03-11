@@ -3,11 +3,15 @@ import { ApiRequest } from "@/types/api.type";
 import { DischargeSummaryTypeRequest } from "@/types/dischargesummary.types";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function getDischargeSummaryFromDb(request:NextRequest) {
+export async function getDischargeSummaryByMrno(tokenNo: string, mrno: string) {
     try{
-        const body = await request.json();
-        const databaseRequest = body as ApiRequest<DischargeSummaryTypeRequest>;
-        return NextResponse.json(await fetchDischargeSummaryFromDb(databaseRequest));
+        if(!tokenNo) return {success: false, message: "Authorization token is required", data: []}
+
+        if(!mrno) return {success: false, message: "MRNO is required", data: []}
+
+        const dischargeSummary = await fetchDischargeSummaryFromDb({ tokenNo, data: { Mrno: mrno } });
+        
+        return dischargeSummary; // already has {success, message, data}
     } catch {
         return NextResponse.json({
             success: false,

@@ -36,6 +36,11 @@ export interface OperationRecordType{
     IIUsage: string;
     Histopathology: string;
     RegType: number;
+    TeamMember: string;
+    MemberRole: string;
+    Group: string;
+    user: string;
+    Date: string;
 }
 
 export interface OperationRecordTypeRequest{

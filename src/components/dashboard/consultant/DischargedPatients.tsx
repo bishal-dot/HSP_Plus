@@ -24,7 +24,7 @@ import { useDischargedPatients } from "@/queries/discharged.queries";
 import { dischargedPatientResponse } from "@/types/patient.type";
 import { ThreeDots } from "react-loader-spinner";
 import { useRouter } from "next/navigation";
-import { AutoSizer, Table } from 'react-virtualized';
+import { AutoSizer, Table, List } from 'react-virtualized';
 import 'react-virtualized/styles.css';
 
 interface DischargedPatientsProps {
@@ -74,8 +74,7 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
     router.push(`/consultant-notes/${Patient.Mrno}`);
   };
 
-  const gridClass = "grid w-full grid-cols-[44px_1fr_1.5fr_1.8fr_1fr_1.3fr_1.4fr_1.4fr_0.8fr] items-center";
-
+  const gridClass = "grid w-full grid-cols-1 md:grid-cols-[0.5fr_1fr_1.5fr_1.8fr_2fr_1.3fr_1.4fr_1.4fr_0.8fr] items-center";
   const rowRenderer = ({ rowData, index, key, style }: any) => {
     const patient = dischargedPatients[index];
     if (!rowData) return null;
@@ -84,11 +83,11 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
       <div
         key={key}
         style={style}
-        className={`${gridClass} border-b border-slate-100 hover:bg-blue-50/60 dark:hover:bg-slate-700/40 transition-colors text-sm group cursor-pointer`}
+        className={`${gridClass} border-b border-slate-100 hover:bg-blue-50/60 dark:hover:bg-slate-700/40 transition-colors text-left text-sm group cursor-pointer`}
         onClick={() => openConsultantNotes(rowData)}
       >
         {/* Actions */}
-        <div className="flex items-center gap-0.5 px-1">
+        <div className="flex items-start gap-0.5 px-1">
           <button className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition">
             <FileText className="w-3.5 h-3.5" />
           </button>
@@ -113,22 +112,22 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
 
         {/* Contact */}
         <div className="px-3 flex flex-col gap-0.5">
-          <span className="flex gap-1 items-center text-xs text-slate-700 dark:text-slate-300">
+          <span className="flex gap-1 items-start text-xs text-slate-700 dark:text-slate-300">
             <Phone className="w-3 h-3 text-slate-400 shrink-0" /> {patient.Mobile || "N/A"}
           </span>
-          <span className="flex gap-1 items-center text-xs text-slate-500 truncate">
+          <span className="flex gap-1 items-start text-xs text-slate-500 truncate">
             <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {patient.ADDRESS || "N/A"}
           </span>
         </div>
 
         {/* Ward */}
-        <div className="px-3 flex gap-1 items-center text-xs text-slate-700 dark:text-slate-300">
+        <div className="px-3 flex gap-1 items-start text-xs text-slate-700 dark:text-slate-300">
           <Bed className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <span className="truncate">{patient.WARD || "N/A"}</span>
         </div>
 
         {/* Consultant */}
-        <div className="px-3 flex gap-1 items-center text-xs text-slate-700 dark:text-slate-300">
+        <div className="px-3 flex gap-1 items-start text-xs text-slate-700 dark:text-slate-300">
           <Stethoscope className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <span className="truncate">{patient.CONSULTANT || "N/A"}</span>
         </div>
@@ -381,7 +380,7 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
             {/* Sticky header */}
             <div className={`${gridClass} bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold uppercase tracking-wide`}>
-              <div className="px-2 py-3.5">Act.</div>
+              <div className="px-2 py-3.5">Action.</div>
               <div className="px-3 py-3.5">IPD / MR</div>
               <div className="px-3 py-3.5">Patient</div>
               <div className="px-3 py-3.5">Contact</div>
@@ -404,15 +403,17 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
               <div style={{ height: 600 }}>
                 <AutoSizer>
                   {({ width, height }) => (
-                    <Table
+                    <List
                       width={width}
                       height={height}
                       headerHeight={0}
                       rowHeight={72}
                       rowCount={dischargedPatients.length}
-                      rowGetter={({ index }) => dischargedPatients[index]}
+                      // rowGetter={({ index }) => dischargedPatients[index]}
                       overscanRowCount={5}
-                      rowRenderer={rowRenderer}
+                       rowRenderer={({ index, key, style }) =>
+                        rowRenderer({ rowData: dischargedPatients[index], index, key, style })
+                      }
                     />
                   )}
                 </AutoSizer>

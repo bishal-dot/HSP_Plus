@@ -59,9 +59,23 @@ export interface Medication{
 
 export interface PrescriptionFormRequest{
   patientCode: string;
-  patientName: string;
-  regNo: string;
-  age: string;
-  gender: string;
-  doctorName: string;
+  patientName?: string;
+  regNo?: string;
+  age?: string;
+  gender?: string;
+  doctorName?: string;
+}
+
+export interface MedicineListRequest{
+  ItemName: string | null;
+  CenterId: number | null;
+  DeptCode: number | null;
+  PatientCode: string | null;
+  C_User: number | null;
+}
+
+export interface MedicineListResponse{
+  itemid: string;
+  Particular: string;
+  Name: string;
 }

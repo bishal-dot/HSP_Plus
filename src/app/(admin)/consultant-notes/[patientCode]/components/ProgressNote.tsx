@@ -17,6 +17,7 @@ import {
 import { useAuthToken } from "@/context/AuthContext";
 import { useProgressNote } from "../queries/progress-note.queries";
 import { ProgressNote } from "@/services/progress-note.service";
+import { ProgressNoteResponse } from "@/types/progress-note.types";
 
 
 function formatDate(dateStr: string) {
@@ -133,10 +134,13 @@ interface props {
 const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
   const { authToken } = useAuthToken();
 
-  const { data: ProgressNoteData } = useProgressNote(authToken, PatientCode);
+  const Mrno = '01204502'
 
+  const { data: ProgressNoteData } = useProgressNote(authToken, PatientCode) as {
+    data: ProgressNoteResponse[] | undefined
+  };
+  console.log("PatientCode", PatientCode);
   console.log("ProgressNoteData", ProgressNoteData);
-
   const today = new Date().toISOString().split("T")[0];
 
   const [date, setDate] = useState(today);
@@ -152,12 +156,6 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
   //     n.DISCIPLINE.toLowerCase().includes(search.toLowerCase()) ||
   //     n.PATIENTPROGRESSNOTE.toLowerCase().includes(search.toLowerCase())
   // );
-
-  useEffect(() => {
-    if (ProgressNoteData) {
-      setNotes(ProgressNoteData);
-    }
-  }, [ProgressNoteData]);
 
  async function handleSave() {
     if (!discipline || !noteText.trim()) return;
@@ -231,9 +229,9 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
       <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col xl:flex-row gap-6">
           {/* ── Left Panel: Form ── */}
-          <aside className="xl:w-100 flex-shrink-0">
+          <aside className="xl:w-100 shrink-0">
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-sky-500 to-cyan-400 px-5 py-4">
+              <div className="bg-linear-to-r from-sky-500 to-cyan-400 px-5 py-4">
                 <h2 className="text-white font-semibold text-sm flex items-center gap-2">
                   <Plus size={16} /> New Observation
                 </h2>
@@ -323,9 +321,27 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
             </div>
           </aside>
 
-          {/* ── Right Panel: List ── */}
-          <section className="flex-1 min-w-0">
-            {/* … same search, filter, cards & table view as before … */}
+          {/* Right Panel: Patient Progress Notes */}
+          <section className="flex-1 min-w-0 px-4 overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4">Patient Progress Notes</h2>
+
+            {ProgressNoteData?.map((nt: ProgressNoteResponse) => (
+              <div
+                key={nt.unkid}
+                className="bg-white shadow-sm rounded-lg p-4 mb-4 border border-gray-200 hover:shadow-md transition"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-500">{nt.date }</span>
+                  <span className="text-sm font-medium text-indigo-600">{nt.USER}</span>
+                </div>
+
+                <div className="mb-2">
+                  <h3 className="text-md font-semibold">{nt.DISCIPLINE}</h3>
+                </div>
+
+                <p className="text-gray-700">{nt.PATIENTPROGRESSNOTE}</p>
+              </div>
+            ))}
           </section>
         </div>
       </main>

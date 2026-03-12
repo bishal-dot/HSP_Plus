@@ -18,12 +18,17 @@ import {
   ChevronRight,
   X,
   Building2,
+  Stethoscope,
 } from "lucide-react";
 import { useAuthToken } from "@/context/AuthContext";
 import { useOPDPatients } from "@/queries/opd.queries";
 import { useRouter } from "next/navigation";
 import { useFacultyMaster } from "@/queries/master.queries";
 import { opdPatientRequest } from "@/types/patient.type";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
+import { RotatingLines } from "react-loader-spinner";
+import { AutoSizer, List } from "react-virtualized";
 
 const DATE_OPTIONS = [
   "Today",
@@ -58,6 +63,16 @@ const OPDALLPatients: React.FC<OPDALLPatientsProps> = ({ onClose }) => {
   const [showFilters, setShowFilters] = useState(true);
 
   const { data: facultyMaster, isLoading: isFacultyLoading } = useFacultyMaster(authToken);
+
+  const Loader = () => {
+      return(<RotatingLines
+        strokeColor="grey"
+        strokeWidth="5"
+        animationDuration="0.75"
+        width="96"
+        visible={true}
+      />)
+    }
 
   // Store filters in state for query function
   const [filters, setFilters] = useState<opdPatientRequest>({
@@ -175,17 +190,76 @@ const OPDALLPatients: React.FC<OPDALLPatientsProps> = ({ onClose }) => {
     });
   };
 
-
   const openConsultantNotes = (Patient: any) => {
     sessionStorage.setItem('selectedPatient', JSON.stringify(Patient));
     const faculty = Patient.FacultyName;
-
-    if (faculty === 'E N T') {
-      router.push(`/consultant-notes/ent/${Patient.PatientCode}`); 
-    } else {
       router.push(`/consultant-notes/${Patient.PatientCode}`); 
-    }
   };
+
+  const gridClass = "grid w-full grid-cols-1 md:grid-cols-[1fr_1fr_1.5fr_1.8fr_2fr_1.3fr] items-center";
+
+  const rowRenderer = ({ rowData, index, key, style }: any) => {
+    const patient = patients[index];
+    if (!patient) return null;
+
+    return (
+      <div
+        key={key}
+        style={style}
+        className={`${gridClass} border-b border-slate-100 hover:bg-blue-50/60 dark:hover:bg-slate-700/40 transition-colors text-left text-sm group cursor-pointer`}
+        onClick={() => openConsultantNotes(rowData)}>
+
+        {/* Actions */}
+        <div className="flex items-start gap-0.5 px-1">
+          <button className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition">
+            <FileText className="w-4 h-4" />
+          </button>
+          <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* IPD / MR */}
+        <div className="px-3">
+          <p className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">
+            {patient.RegCode|| "N/A"}
+          </p>
+          <p className="font-mono text-sm text-slate-400">{patient.PatientCode}</p>
+        </div>
+
+        {/* Patient info */}
+        <div className="px-3">
+          <p className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {patient.PATIENTNAME}
+          </p>
+          <p className="font-mono text-sm text-slate-400">{patient.Age}</p>
+        </div>
+        
+        {/* Contact */}
+          <div className="px-3 flex flex-col gap-0.5">
+            <span className="flex gap-1 items-start text-sm text-slate-700 dark:text-slate-300">
+              <Phone className="w-3 h-3 text-slate-400 shrink-0" /> {patient.Mobile || "N/A"}
+            </span>
+            <span className="flex gap-1 items-start text-sm text-slate-500 truncate">
+              <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {patient.ADDRESS || "N/A"}
+            </span>
+          </div>
+
+          {/* Consultant */}
+        <div className="px-3 flex gap-1 items-start text-sm text-slate-700 dark:text-slate-300">
+          <Stethoscope className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="truncate">{patient.BlockedBy || "N/A"}</span>
+        </div>
+
+        {/* Visit Mode */}
+        <div className="px-3">
+          <p className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {patient.VisitMode}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // Safe function to get selected faculty label
   const getSelectedFacultyLabel = () => {
@@ -205,8 +279,8 @@ const OPDALLPatients: React.FC<OPDALLPatientsProps> = ({ onClose }) => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-medium">Loading patients...</p>
+             <Loader />
+          {/* <p className="text-slate-600 font-medium">Loading patients...</p> */}
         </div>
       </div>
     );
@@ -399,22 +473,24 @@ const OPDALLPatients: React.FC<OPDALLPatientsProps> = ({ onClose }) => {
                               <label className="text-xs text-gray-600 mb-1.5 block font-medium">
                                 From Date
                               </label>
-                              <input
-                                type="date"
-                                value={customDate.from}
-                                onChange={(e) => setCustomDate({ ...customDate, from: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                              />
+                              <DatePicker
+                                  selected={customDate.from ? new Date(customDate.from) : null}
+                                  onChange={(date: any) => setCustomDate(prev => ({ ...prev, from: date ? date.toISOString().split('T')[0] : "" }))}
+                                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                  dateFormat="yyyy-MM-dd"
+                                  placeholderText="Select date"
+                                />
                             </div>
                             <div>
                               <label className="text-xs text-gray-600 mb-1.5 block font-medium">
                                 To Date
                               </label>
-                              <input
-                                type="date"
-                                value={customDate.to}
-                                onChange={(e) => setCustomDate({ ...customDate, to: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                              <DatePicker
+                                selected={customDate.to ? new Date(customDate.to) : null}
+                                onChange={(date: any) => setCustomDate(prev => ({ ...prev, to: date ? date.toISOString().split('T')[0] : "" }))}
+                                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                dateFormat="yyyy-MM-dd"
+                                placeholderText="Select date"
                               />
                             </div>
                             <button
@@ -452,7 +528,7 @@ const OPDALLPatients: React.FC<OPDALLPatientsProps> = ({ onClose }) => {
         </div>
 
         {/* Patients Table */}
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+        {/* <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
           {patients.length === 0 ? (
             <div className="p-12 text-center text-gray-500 font-medium">No patients found.</div>
           ) : (
@@ -503,6 +579,60 @@ const OPDALLPatients: React.FC<OPDALLPatientsProps> = ({ onClose }) => {
                 ))}
               </tbody>
             </table>
+          )}
+        </div> */}
+
+        {/* ── Virtualized Table ── */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          {/* Sticky header */}
+          <div className={`${gridClass} bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold uppercase tracking-wide`}>
+            <div className="px-2 py-3.5">Action.</div>
+            <div className="px-3 py-3.5">MR No</div>
+            <div className="px-3 py-3.5">Patient Info</div>
+            <div className="px-3 py-3.5">Contact</div>
+            <div className="px-3 py-3.5">Blocked By</div>
+            <div className="px-3 py-3.5">Visit Mode</div>
+          </div>
+
+          {patients.length === 0 ? (
+            <div className="py-16 text-center">
+              <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                <Users className="w-7 h-7 text-slate-400" />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">No discharged patients found</p>
+              <p className="text-xs text-slate-400 mt-1">Try adjusting the date range or filters</p>
+            </div>
+          ) : (
+            <div style={{ height: 600 }}>
+              <AutoSizer>
+                {({ width, height }) => (
+                  <List
+                    width={width}
+                    height={height}
+                    headerHeight={0}
+                    rowHeight={72}
+                    rowCount={patients.length}
+                    // rowGetter={({ index }) => dischargedPatients[index]}
+                    overscanRowCount={5}
+                      rowRenderer={({ index, key, style }) =>
+                      rowRenderer({ rowData: patients[index], index, key, style })
+                    }
+                  />
+                )}
+              </AutoSizer>
+            </div>
+          )}
+
+          {/* Footer */}
+          {patients.length > 0 && (
+            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold text-slate-700 dark:text-slate-200">{patients.length}</span> patients found
+              </span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                Updated {new Date().toLocaleTimeString()}
+              </span>
+            </div>
           )}
         </div>
       </div>

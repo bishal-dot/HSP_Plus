@@ -18,7 +18,7 @@ const LaboratoryRecords: React.FC<props> = ({ Patientcode }) => {
   const { authToken } = useAuthToken();
   const { data: reports, isFetching, isError } = useLabRecords(authToken, Patientcode);
 
-  if (isFetching) return <p>Loading lab records...</p>;
+  if (isFetching) return <p className="p-6 text-center">Loading lab records...</p>;
   if (isError) return <p>Failed to load lab records</p>;
   if (!reports || reports.length === 0) return <p>No lab records found</p>;
 

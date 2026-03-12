@@ -22,7 +22,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useAuthToken } from "@/context/AuthContext";
 import { useDischargedPatients } from "@/queries/discharged.queries";
 import { dischargedPatientResponse } from "@/types/patient.type";
-import { ThreeDots } from "react-loader-spinner";
+import { RotatingLines, ThreeDots } from "react-loader-spinner";
 import { useRouter } from "next/navigation";
 import { AutoSizer, Table, List } from 'react-virtualized';
 import 'react-virtualized/styles.css';
@@ -34,6 +34,16 @@ interface DischargedPatientsProps {
 const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
   const { authToken } = useAuthToken();
   const router = useRouter();
+
+   const Loader = () => {
+    return(<RotatingLines
+      strokeColor="grey"
+      strokeWidth="5"
+      animationDuration="0.75"
+      width="96"
+      visible={true}
+    />)
+  }
 
   const [filters, setFilters] = useState({
     DTFROM: "",
@@ -169,15 +179,7 @@ const DischargedPatients: React.FC<DischargedPatientsProps> = ({ onClose }) => {
       {isFetching && (
         <div className="fixed inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl text-center border border-slate-100 dark:border-slate-700">
-            <ThreeDots
-              height="60"
-              width="60"
-              radius="9"
-              color="#2563eb"
-              ariaLabel="three-dots-loading"
-              wrapperStyle={{ margin: '0 auto' }}
-              visible={true}
-            />
+            <Loader />
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 font-medium">Loading patients…</p>
           </div>
         </div>

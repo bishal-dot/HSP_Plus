@@ -22,263 +22,49 @@ import {
   NotebookIcon,
   LogOut,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect} from "react";
 
-import PreviousConsultantNotes from "./ConsultantNotesHistory";
-import PrescriptionForm from "./PrescriptionForm";
-import LaboratoryRecords from "./LaboratoryRecords";
-import ImagingRecords from "./ImagingRecords";
-import PatientClinicalRecordPage from "./PatientCase";
-
-import { useAuthToken } from "@/context/AuthContext";
-import SsdReferToPatientPage from "@/app/(admin)/ssd-estimate/components/SsdReferToPatientPage";
-import ServiceComponent from "./ServiceNotes";
-import ProgressNotePage from "./ProgressNote";
-import BillDetailsPage from "./BillDetails";
-import IPDOperationRecords from "./IPDOperationRecords";
-import IPDDischargeSummary from "./DischargeSummary";
-
-/* ========================================================= */
-
-type TabKey =
-  | "consultant-notes"
-  | "prescription"
-  | "imaging"
-  | "laboratory"
-  | "patient-case"
-  | "services"
-  | "referssd"
-  | "progress-note"
-  | "bill-details"
-  | "operation-records"
-  | "discharge-summary"
-  ;
-
+type DiagnosisKey =
+  | "normal"
+  | "wax"
+  | "oe"
+  | "myringitis"
+  | "etDysfunction"
+  | "glue"
+  | "aom"
+  | "chl"
+  | "snhl"
+  | "csomMucosal"
+  | "csomSquamous"
+  | "unclassified";
   
 interface Procedures { syringingR: boolean; syringingL: boolean; microscopeExam: boolean; nasoendoscopy: boolean; }
 interface AudiologyTests { ptAudio: boolean; tympanometry: boolean; stapedialReflexes: boolean; speechAudio: boolean; oae: boolean; abr: boolean; vestibularTest: boolean; }
 interface AudiologyTreatment { hearingAid: boolean; hearingAidReview: boolean; hearingTinnitusRehab: boolean; speechLanguage: boolean; assessmentRehab: boolean; }
-interface Diagnosis { csom: string; squamousAA: string; unclassified: string; vertigoBalance: string; tinnitus: string; other: string; }
+interface EarSide {
+  r: boolean;
+  l: boolean;
+  bilat: boolean;
+}
 
-
+interface Diagnosis {
+  normal: EarSide;
+  wax: EarSide;
+  oe: EarSide;
+  myringitis: EarSide;
+  etDysfunction: EarSide;
+  glue: EarSide;
+  aom: EarSide;
+  chl: EarSide;
+  snhl: EarSide;
+  csomMucosal: EarSide;
+  csomSquamous: EarSide;
+  unclassified: EarSide;
+  vertigoBalance: boolean;
+  tinnitus: boolean;
+  other: string;
+}
 /* ========================================================= */
-
-const ENTConsultantNotes: React.FC = () => {
-  const { patientCode } = useParams<{ patientCode: string }>();
-  const { authToken } = useAuthToken();
-  const router = useRouter();
-
-  const [activeTab, setActiveTab] = useState<TabKey | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const [patientInfo, setPatientInfo] = useState<any>(null);
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem("selectedPatient");
-    if (stored) setPatientInfo(JSON.parse(stored));
-  }, []);
-
-  const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
-  const patientNo = patientInfo?.TokenNo || patientInfo?.IPDCODE;
-
-  const handleTabClick = (tab: TabKey) => {
-    if (!patientInfo?.PatientCode) return;
-    if (tab !== "consultant-notes") setShowHistory(false);
-    setActiveTab(tab);
-  };
-
-  const getPatientRegCode = (patientInfo: any) => {
-    if('TokenNo' in patientInfo && patientInfo.TokenNo) return patientInfo.TokenNo;
-    if('IPDCODE' in patientInfo && patientInfo.IPDCODE) return patientInfo.IPDCODE;
-    if('Mrno' in patientInfo && patientInfo.Mrno) return patientInfo.Mrno;
-    return undefined;
-  }
-  
-  return (
-    <div className="min-h-screen space-y-6">
-      {/* ================= Header ================= */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="p-5 space-y-4">
-          {/* Patient Info */}
-           <div className="grid lg:grid-cols-7 md:grid-cols-4 gap-4">
-            <Info
-              label="Patient Code"
-              value={patientId || "-"}
-              icon={<ClipboardList className="w-5 h-5 text-blue-600" />}
-            />
-            <Info
-              label="Patient"
-              value={
-                patientInfo
-                  ? `${patientInfo.PatientName || patientInfo.PATIENTNAME || patientInfo.patientname} `
-                  : "-"
-              }
-              icon={<User className="w-5 h-5 text-blue-600" />}
-            />
-            <Info
-              label="Age / Sex"
-              value={
-                patientInfo ? `${patientInfo.Age}` : "-"
-              }
-            />
-            <Info
-              label="Department"
-              value={patientInfo?.FacultyName || patientInfo?.wardName || "-"}
-            />
-            <Info
-              label="Consultant"
-              value={patientInfo?.ConsultingDoctor || patientInfo?.BlockedBy  || patientInfo?.CONSULTANT || "-"}
-            />
-            <Info
-              label="Phone"
-              value={patientInfo?.ContactNo ||  patientInfo?.Mobile || "-"}
-              icon={<Phone className="w-5 h-5 text-blue-600" />}
-            />
-            <Info 
-              label="Token No"
-              value={patientInfo?.TokenNo || patientInfo?.IPDCODE || "-"} />
-          </div>
-
-          {/* Toolbar */}
-            <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100">
-            <ToolbarIcon
-              label="Consultant Notes"
-              icon={<FileText className="w-5 h-5" />}
-              active={activeTab === "consultant-notes"}
-              onClick={() => {
-                handleTabClick("consultant-notes");
-                setShowHistory(true);
-              }}
-              dblClick={() => setShowHistory(false)}
-            />
-            <ToolbarIcon
-              label="Prescription"
-              icon={<Pill className="w-5 h-5" />}
-              active={activeTab === "prescription"}
-              onClick={() => handleTabClick("prescription")}
-            />
-            <ToolbarIcon
-              label="Service"
-              icon={<Stethoscope className="w-5 h-5" />}
-              active={activeTab === "services"}
-              onClick={() => handleTabClick("services")}
-            />
-            <ToolbarIcon
-              label="Imaging"
-              icon={<Scan className="w-5 h-5" />}
-              active={activeTab === "imaging"}
-              onClick={() => handleTabClick("imaging")}
-            />
-            <ToolbarIcon
-              label="Laboratory"
-              icon={<FlaskConical className="w-5 h-5" />}
-              active={activeTab === "laboratory"}
-              onClick={() => handleTabClick("laboratory")}
-            />
-            <ToolbarIcon
-              label="Patient Case"
-              icon={<ClipboardList className="w-5 h-5" />}
-              active={activeTab === "patient-case"}
-              onClick={() => handleTabClick("patient-case")}
-            />
-            <ToolbarIcon 
-              label="Progress Note"
-              icon={<NotebookIcon className="w-5 h-5" />}
-              active={activeTab === "progress-note"}
-              onClick={() => handleTabClick("progress-note")}
-            />
-            <ToolbarIcon
-              label="Bill Details"
-              icon={<ReceiptText className="w-5 h-5" />}
-              active={activeTab === "bill-details"}
-              onClick={() => handleTabClick("bill-details")}
-            />
-            <ToolbarIcon
-              label="Operation Records"
-              icon={<ReceiptIcon className="w-5 h-5" />}
-              active={activeTab === "operation-records"}
-              onClick={() => handleTabClick("operation-records")}
-            />
-            <ToolbarIcon
-              label="Discharge Summary"
-              icon={<LogOut className="w-5 h-5" />}
-              active={activeTab === "discharge-summary"}
-              onClick={() => handleTabClick("discharge-summary")}
-            />
-            <ToolbarIcon 
-              label="Refer SSD"
-              icon={<ArrowRightLeft className="w-5 h-5" />}
-              active={activeTab === "referssd"}
-              onClick={() => {
-                if(!patientInfo?.PatientCode) return;
-                const regCode = getPatientRegCode(patientInfo);
-                if(!regCode) return;
-
-                sessionStorage.setItem("selectedPatient", JSON.stringify(patientInfo));
-                router.push(`/ssd-estimate/${patientInfo.PatientCode}/${regCode}`);
-            }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ================= Main Content ================= */}
-      {!activeTab && patientInfo?.PatientCode && (
-        <ENTConsultantNotesForm existingNotes={null} router={router} />
-      )}
-
-      {activeTab === "consultant-notes" && patientInfo?.PatientCode && (
-        showHistory ? (
-          <PreviousConsultantNotes
-            patientCode={patientInfo.PatientCode}
-            onCreateNew={() => setShowHistory(false)}
-          />
-        ) : (
-          <ENTConsultantNotesForm existingNotes={null} router={router} />
-        )
-      )}
-
-      {activeTab === "prescription" && patientInfo?.PatientCode && (
-        <PrescriptionForm patientCode={patientId} />
-      )}
-
-      {activeTab === "services" && patientInfo?.PatientCode && (
-        <ServiceComponent Patientcode={patientId} />
-      )}
-
-      {activeTab === "imaging" && patientInfo?.PatientCode && (
-        <ImagingRecords Patientcode={patientId} />
-      )}
-
-      {activeTab === "laboratory" && patientInfo?.PatientCode && (
-        <LaboratoryRecords Patientcode={patientId} />
-      )}
-
-      {activeTab === "patient-case" && patientInfo?.PatientCode &&
-      <PatientClinicalRecordPage Patientcode={patientId}/>}
-
-      {activeTab === "progress-note" && patientId && (
-        <ProgressNotePage  PatientCode={patientId} />
-      )}
-
-      {activeTab === "bill-details" && patientId && (
-        <BillDetailsPage PatientCode={patientNo} />
-      )}
-
-      {activeTab === "operation-records" && patientId && (
-        <IPDOperationRecords PatientCode={patientId} />
-      )}
-
-      {activeTab === "discharge-summary" && patientId && (
-        <IPDDischargeSummary MrNO={patientId} />
-      )}
-
-      {activeTab === "referssd" &&  patientInfo?.PatientCode && (
-        <SsdReferToPatientPage patientInfo={patientInfo} />
-      )}
-    </div>
-  );
-};
 
 
 interface FormProps {
@@ -296,7 +82,39 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
   const [audiologyTreatment, setAudiologyTreatment] = useState<AudiologyTreatment>({
     hearingAid:false, hearingAidReview:false, hearingTinnitusRehab:false, speechLanguage:false, assessmentRehab:false
   });
-  const [diagnosis, setDiagnosis] = useState<Diagnosis>({ csom:'', squamousAA:'', unclassified:'', vertigoBalance:'', tinnitus:'', other:'' });
+  const earDefault = { r:false, l:false, bilat:false };
+  const [diagnosis, setDiagnosis] = useState<Diagnosis>({ 
+    normal:{...earDefault},
+    wax:{...earDefault},
+    oe:{...earDefault},
+    myringitis:{...earDefault},
+    etDysfunction:{...earDefault},
+    glue:{...earDefault},
+    aom:{...earDefault},
+    chl:{...earDefault},
+    snhl:{...earDefault},
+    csomMucosal:{...earDefault},
+    csomSquamous:{...earDefault},
+    unclassified:{...earDefault},
+    vertigoBalance:false,
+    tinnitus:false,
+    other:'' 
+  });
+
+  const diagnosisList: { key: DiagnosisKey; label: string }[] = [
+  { key: "normal", label: "Normal" },
+  { key: "wax", label: "Wax" },
+  { key: "oe", label: "O.E (Dry/Wet)" },
+  { key: "myringitis", label: "Myringitis" },
+  { key: "etDysfunction", label: "ET Dysfunction" },
+  { key: "glue", label: "Glue" },
+  { key: "aom", label: "AOM (Active/Recurrent)" },
+  { key: "chl", label: "CHL with intact TM" },
+  { key: "snhl", label: "SNHL" },
+  { key: "csomMucosal", label: "CSOM Mucosal" },
+  { key: "csomSquamous", label: "CSOM Squamous" },
+  { key: "unclassified", label: "Unclassified" }
+];
   const [treatmentPlan, setTreatmentPlan] = useState(['','','','']);
   const [notes, setNotes] = useState('');
 
@@ -661,84 +479,83 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
               {/* Main Diagnosis */}
               <div>
                 <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <ClipboardList size={20} className="text-blue-600" />
-                  Main Diagnosis (for each ear, R/L/Bilat.)
+                  <ClipboardList size={20} className="text-blue-600"/>
+                  Main Diagnosis (for each ear R / L / Bilat)
                 </Label>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="csom" className="text-sm">
-                      CSOM: Mucosal/TT (dry/moist/wet)
-                    </Label>
-                    <Input
-                      id="csom"
-                      value={diagnosis.csom}
-                      onChange={(e:any) => setDiagnosis({ ...diagnosis, csom: e.target.value })}
-                      placeholder="Mucosal/TT (dry/moist/wet)"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="squamousAA" className="text-sm">
-                      Squamous/AA (Dry/Moist/Wet)
-                    </Label>
-                    <Input
-                      id="squamousAA"
-                      value={diagnosis.squamousAA}
-                      onChange={(e:any) => setDiagnosis({ ...diagnosis, squamousAA: e.target.value })}
-                      placeholder="Dry/Moist/Wet"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="unclassified" className="text-sm">
-                      Unclassified
-                    </Label>
-                    <Input
-                      id="unclassified"
-                      value={diagnosis.unclassified}
-                      onChange={(e:any) => setDiagnosis({ ...diagnosis, unclassified: e.target.value })}
-                      placeholder="Unclassified"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="vertigoBalance" className="text-sm">
-                      Vertigo/Balance
-                    </Label>
-                    <Input
-                      id="vertigoBalance"
-                      value={diagnosis.vertigoBalance}
-                      onChange={(e:any) =>
-                        setDiagnosis({ ...diagnosis, vertigoBalance: e.target.value })
-                      }
-                      placeholder="Vertigo/Balance"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="tinnitus" className="text-sm">
+
+                <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+
+                  {diagnosisList.map((item)=>(
+                    <div key={item.key} className="grid grid-cols-4 items-center gap-3">
+
+                      <span className="text-sm">{item.label}</span>
+
+                      <Checkbox
+                        checked={diagnosis[item.key].r}
+                        onCheckedChange={(v:boolean)=>
+                          setDiagnosis({
+                            ...diagnosis,
+                            [item.key]:{
+                              ...diagnosis[item.key],
+                              r:v
+                            }
+                          })
+                        }
+                      />
+
+                      <Checkbox
+                        checked={diagnosis[item.key].l}
+                        onCheckedChange={(v:boolean)=>
+                          setDiagnosis({
+                            ...diagnosis,
+                            [item.key]:{
+                              ...diagnosis[item.key],
+                              l:v
+                            }
+                          })
+                        }
+                      />
+
+                      <Checkbox
+                        checked={diagnosis[item.key].bilat}
+                        onCheckedChange={(v:boolean)=>
+                          setDiagnosis({
+                            ...diagnosis,
+                            [item.key]:{
+                              ...diagnosis[item.key],
+                              bilat:v
+                            }
+                          })
+                        }
+                      />
+
+                    </div>
+                  ))}
+
+                  <div className="flex gap-6 pt-4">
+                    <label className="flex items-center gap-2">
+                      <Checkbox
+                        checked={diagnosis.vertigoBalance}
+                        onCheckedChange={(v:boolean)=>setDiagnosis({...diagnosis, vertigoBalance:v})}
+                      />
+                      Vertigo / Balance
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <Checkbox
+                        checked={diagnosis.tinnitus}
+                        onCheckedChange={(v:boolean)=>setDiagnosis({...diagnosis, tinnitus:v})}
+                      />
                       Tinnitus
-                    </Label>
-                    <Input
-                      id="tinnitus"
-                      value={diagnosis.tinnitus}
-                      onChange={(e:any) => setDiagnosis({ ...diagnosis, tinnitus: e.target.value })}
-                      placeholder="Tinnitus"
-                      className="mt-1"
-                    />
+                    </label>
                   </div>
-                  <div>
-                    <Label htmlFor="diagnosisOther" className="text-sm">
-                      Other
-                    </Label>
-                    <Input
-                      id="diagnosisOther"
-                      value={diagnosis.other}
-                      onChange={(e:any) => setDiagnosis({ ...diagnosis, other: e.target.value })}
-                      placeholder="Other diagnosis"
-                      className="mt-1"
-                    />
-                  </div>
+
+                  <Input
+                    placeholder="Other diagnosis..."
+                    value={diagnosis.other}
+                    onChange={(e:any)=>setDiagnosis({...diagnosis, other:e.target.value})}
+                  />
+
                 </div>
               </div>
             </div>
@@ -804,7 +621,7 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
   </>
   );
 }
-
+export default ENTConsultantNotesForm;
 
 function Section({
   title,
@@ -843,34 +660,6 @@ function Field({
   );
 }
 
-function ToolbarIcon({
-  icon,
-  label,
-  active,
-  onClick,
-  dblClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick?: () => void;
-  dblClick?: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      onDoubleClick={dblClick}
-      className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl border ${
-        active ? "border-blue-500 bg-blue-50" : "border-gray-200"
-      } hover:bg-gray-100 transition`}
-    >
-      {icon}
-      <span className="text-[11px] text-gray-600 mt-1">
-        {label}
-      </span>
-    </button>
-  );
-}
 const Button = ({ children, className = '', variant = 'primary', icon: Icon, ...props }:(any)) => {
   const baseClasses = 'px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors font-medium flex items-center gap-2 justify-center';
   const variantClasses = variant === 'outline' 
@@ -885,25 +674,6 @@ const Button = ({ children, className = '', variant = 'primary', icon: Icon, ...
   );
 };
 
-function Info({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-3 items-center">
-      {icon}
-      <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="font-medium text-gray-900">{value}</p>
-      </div>
-    </div>
-  );
-}
 const Card = ({ children, className = '' }:(any)) => (
   <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>{children}</div>
 );
@@ -946,4 +716,4 @@ const Textarea = ({ className = '', ...props }) => (
   />
 );
 
-export default ENTConsultantNotes;
+// export default ENTConsultantNotes;

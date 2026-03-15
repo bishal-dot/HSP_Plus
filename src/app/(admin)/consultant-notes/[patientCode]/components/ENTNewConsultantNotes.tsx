@@ -2,49 +2,50 @@
 
 import {
   Stethoscope,
-  User,
-  FlaskConical,
-  Pill,
-  Scan,
   ClipboardList,
   FileText,
-  Phone,
-  ArrowRightLeft,
   Ear,
   Save,
   Printer,
-  ActivityIcon,
   Activity,
   Eye,
   Check,
-  ReceiptIcon,
-  ReceiptText,
-  NotebookIcon,
-  LogOut,
 } from "lucide-react";
-import React, { useState, useEffect} from "react";
+import React, { useState } from "react";
+ import { ToastContainer, toast } from 'react-toastify';
+//  import "react-toastify/dist/ReactToastify.css";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type DiagnosisKey =
-  | "normal"
-  | "wax"
-  | "oe"
-  | "myringitis"
-  | "etDysfunction"
-  | "glue"
-  | "aom"
-  | "chl"
-  | "snhl"
-  | "csomMucosal"
-  | "csomSquamous"
-  | "unclassified";
-  
-interface Procedures { syringingR: boolean; syringingL: boolean; microscopeExam: boolean; nasoendoscopy: boolean; }
-interface AudiologyTests { ptAudio: boolean; tympanometry: boolean; stapedialReflexes: boolean; speechAudio: boolean; oae: boolean; abr: boolean; vestibularTest: boolean; }
-interface AudiologyTreatment { hearingAid: boolean; hearingAidReview: boolean; hearingTinnitusRehab: boolean; speechLanguage: boolean; assessmentRehab: boolean; }
-interface EarSide {
-  r: boolean;
-  l: boolean;
-  bilat: boolean;
+  | "normal" | "wax" | "oe" | "myringitis" | "etDysfunction"
+  | "glue" | "aom" | "chl" | "snhl" | "csomMucosal"
+  | "csomSquamous" | "unclassified";
+
+type EarSide = "R" | "L" | "Bilat" | "";
+
+interface Procedures {
+  syringingR: boolean;
+  microscopeExam: boolean;
+  nasoendoscopy: boolean;
+}
+
+interface AudiologyTests {
+  ptAudio: boolean;
+  tympanometry: boolean;
+  stapedialReflexes: boolean;
+  speechAudio: boolean;
+  oae: boolean;
+  abr: boolean;
+  vestibularTest: boolean;
+}
+
+interface AudiologyTreatment {
+  hearingAid: boolean;
+  hearingAidReview: boolean;
+  hearingTinnitusRehab: boolean;
+  speechLanguage: boolean;
+  assessmentRehab: boolean;
 }
 
 interface Diagnosis {
@@ -64,77 +65,140 @@ interface Diagnosis {
   tinnitus: boolean;
   other: string;
 }
-/* ========================================================= */
-
 
 interface FormProps {
-  existingNotes: any;
+  existingNotes?: any;
   router?: any;
 }
-const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => {
-  const [presentComplaint, setPresentComplaint] = useState('');
-  const [procedures, setProcedures] = useState<Procedures>({ syringingR:false, syringingL:false, microscopeExam:false, nasoendoscopy:false });
-  const [audiologyTests, setAudiologyTests] = useState<AudiologyTests>({
-    ptAudio:false, tympanometry:false, stapedialReflexes:false, speechAudio:false, oae:false, abr:false, vestibularTest:false
-  });
-  const [examination, setExamination] = useState({ rightEar:'', leftEar:'', rightNose:'', leftNose:'' });
-  const [pastMedicalHistory, setPastMedicalHistory] = useState('');
-  const [audiologyTreatment, setAudiologyTreatment] = useState<AudiologyTreatment>({
-    hearingAid:false, hearingAidReview:false, hearingTinnitusRehab:false, speechLanguage:false, assessmentRehab:false
-  });
-  const earDefault = { r:false, l:false, bilat:false };
-  const [diagnosis, setDiagnosis] = useState<Diagnosis>({ 
-    normal:{...earDefault},
-    wax:{...earDefault},
-    oe:{...earDefault},
-    myringitis:{...earDefault},
-    etDysfunction:{...earDefault},
-    glue:{...earDefault},
-    aom:{...earDefault},
-    chl:{...earDefault},
-    snhl:{...earDefault},
-    csomMucosal:{...earDefault},
-    csomSquamous:{...earDefault},
-    unclassified:{...earDefault},
-    vertigoBalance:false,
-    tinnitus:false,
-    other:'' 
-  });
 
-  const diagnosisList: { key: DiagnosisKey; label: string }[] = [
-  { key: "normal", label: "Normal" },
-  { key: "wax", label: "Wax" },
-  { key: "oe", label: "O.E (Dry/Wet)" },
-  { key: "myringitis", label: "Myringitis" },
+// ─── Diagnosis list (order matches InvestigationId in DB) ────────────────────
+const diagnosisList: { key: DiagnosisKey; label: string }[] = [
+  { key: "normal",        label: "Normal" },
+  { key: "wax",           label: "Wax" },
+  { key: "oe",            label: "O.E (Dry/Wet)" },
+  { key: "myringitis",    label: "Myringitis" },
   { key: "etDysfunction", label: "ET Dysfunction" },
-  { key: "glue", label: "Glue" },
-  { key: "aom", label: "AOM (Active/Recurrent)" },
-  { key: "chl", label: "CHL with intact TM" },
-  { key: "snhl", label: "SNHL" },
-  { key: "csomMucosal", label: "CSOM Mucosal" },
-  { key: "csomSquamous", label: "CSOM Squamous" },
-  { key: "unclassified", label: "Unclassified" }
+  { key: "glue",          label: "Glue" },
+  { key: "aom",           label: "AOM (Active/Recurrent)" },
+  { key: "chl",           label: "CHL with intact TM" },
+  { key: "snhl",          label: "SNHL" },
+  { key: "csomMucosal",   label: "CSOM Mucosal" },
+  { key: "csomSquamous",  label: "CSOM Squamous" },
+  { key: "unclassified",  label: "Unclassified" },
 ];
-  const [treatmentPlan, setTreatmentPlan] = useState(['','','','']);
-  const [notes, setNotes] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = {  presentComplaint, procedures, audiologyTests, examination, pastMedicalHistory, audiologyTreatment, diagnosis, treatmentPlan, notes };
-    console.log('Form Data:', formData);
-    alert("Consultant notes saved!");
+// ─── Component ────────────────────────────────────────────────────────────────
+const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => {
+
+  const [presentComplaint, setPresentComplaint]     = useState("");
+  const [pastMedicalHistory, setPastMedicalHistory] = useState("");
+  const [notes, setNotes]                           = useState("");
+  const [treatmentPlan, setTreatmentPlan]           = useState("");
+  const [examination, setExamination]               = useState({ rightEar: "", leftEar: "", rightNose: "", leftNose: "" });
+
+  const [procedures, setProcedures] = useState<Procedures>({
+    syringingR: false, microscopeExam: false, nasoendoscopy: false,
+  });
+
+  const [audiologyTests, setAudiologyTests] = useState<AudiologyTests>({
+    ptAudio: false, tympanometry: false, stapedialReflexes: false,
+    speechAudio: false, oae: false, abr: false, vestibularTest: false,
+  });
+
+  const [audiologyTreatment, setAudiologyTreatment] = useState<AudiologyTreatment>({
+    hearingAid: false, hearingAidReview: false, hearingTinnitusRehab: false,
+    speechLanguage: false, assessmentRehab: false,
+  });
+
+  const [diagnosis, setDiagnosis] = useState<Diagnosis>({
+    normal: "", wax: "", oe: "", myringitis: "", etDysfunction: "",
+    glue: "", aom: "", chl: "", snhl: "", csomMucosal: "",
+    csomSquamous: "", unclassified: "",
+    vertigoBalance: false, tinnitus: false, other: "",
+  });
+
+  // ─── Side selector helper ──────────────────────────────────────────────────
+  const selectSide = (key: DiagnosisKey, side: EarSide) => {
+    setDiagnosis(prev => ({
+      ...prev,
+      [key]: prev[key] === side ? "" : side,
+    }));
   };
 
+  // ─── Build DB payload ─────────────────────────────────────────────────────
+  const buildPayload = () => {
+    const rows: { TypeId: number; InvestigationId: number; Value: string }[] = [];
+
+    rows.push({ TypeId: 1, InvestigationId: 1, Value: procedures.syringingR     ? "1" : "0" });
+    rows.push({ TypeId: 1, InvestigationId: 2, Value: procedures.microscopeExam ? "1" : "0" });
+    rows.push({ TypeId: 1, InvestigationId: 3, Value: procedures.nasoendoscopy  ? "1" : "0" });
+
+    rows.push({ TypeId: 2, InvestigationId: 4,  Value: audiologyTests.ptAudio          ? "1" : "0" });
+    rows.push({ TypeId: 2, InvestigationId: 5,  Value: audiologyTests.tympanometry      ? "1" : "0" });
+    rows.push({ TypeId: 2, InvestigationId: 6,  Value: audiologyTests.stapedialReflexes ? "1" : "0" });
+    rows.push({ TypeId: 2, InvestigationId: 7,  Value: audiologyTests.speechAudio       ? "1" : "0" });
+    rows.push({ TypeId: 2, InvestigationId: 8,  Value: audiologyTests.oae               ? "1" : "0" });
+    rows.push({ TypeId: 2, InvestigationId: 9,  Value: audiologyTests.abr               ? "1" : "0" });
+    rows.push({ TypeId: 2, InvestigationId: 10, Value: audiologyTests.vestibularTest     ? "1" : "0" });
+
+    rows.push({ TypeId: 3, InvestigationId: 1, Value: audiologyTreatment.hearingAid          ? "1" : "0" });
+    rows.push({ TypeId: 3, InvestigationId: 2, Value: audiologyTreatment.hearingAidReview     ? "1" : "0" });
+    rows.push({ TypeId: 3, InvestigationId: 3, Value: audiologyTreatment.hearingTinnitusRehab ? "1" : "0" });
+    rows.push({ TypeId: 3, InvestigationId: 4, Value: audiologyTreatment.speechLanguage       ? "1" : "0" });
+    rows.push({ TypeId: 3, InvestigationId: 5, Value: audiologyTreatment.assessmentRehab      ? "1" : "0" });
+
+    diagnosisList.forEach((item, index) => {
+      const value = diagnosis[item.key];
+      if (value) rows.push({ TypeId: 4, InvestigationId: index + 1, Value: value });
+    });
+
+    if (diagnosis.vertigoBalance) rows.push({ TypeId: 5, InvestigationId: 1, Value: "1" });
+    if (diagnosis.tinnitus)       rows.push({ TypeId: 6, InvestigationId: 1, Value: "1" });
+
+    // rows.push({ TypeId: 7, InvestigationId: 1,  Value: presentComplaint });
+    // rows.push({ TypeId: 7, InvestigationId: 2,  Value: pastMedicalHistory });
+    // rows.push({ TypeId: 7, InvestigationId: 3,  Value: examination.rightEar });
+    // rows.push({ TypeId: 7, InvestigationId: 4,  Value: examination.leftEar });
+    // rows.push({ TypeId: 7, InvestigationId: 5,  Value: examination.rightNose });
+    // rows.push({ TypeId: 7, InvestigationId: 6,  Value: examination.leftNose });
+    // treatmentPlan.forEach((plan, i) => rows.push({ TypeId: 7, InvestigationId: 7 + i, Value: plan }));
+    // rows.push({ TypeId: 7, InvestigationId: 11, Value: notes });
+
+    return rows;
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+  const handleSubmit = async(e: React.FormEvent) => {
+    e.preventDefault();
+    const patientInfo = JSON.parse(sessionStorage.getItem('selectedPatient') || '{}');
+    const response = await fetch("/api/patient/ent-notes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ patientInfo, payload: buildPayload() })
+    })
+
+    const result = await response.json();
+    console.log("response:", result);
+    if (result.success) {
+      toast.success("Notes saved successfully!");
+    } else {
+      toast.error("Failed to save notes.");
+    }
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-    <form onSubmit={handleSubmit} className="max-w-full space-y-6">
-
-       {/* Present Complaint and Procedures */}
-        <Card className="mb-6">
+      <ToastContainer position="top-right" autoClose={3000} />
+      <form onSubmit={handleSubmit} className="max-w-full space-y-6">
+          {/* ── Present Complaint & Past Medical History  ── */}
+        <Card>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Present Complaint */}
-              <div>
+              <div className="flex-1">
                 <Label htmlFor="presentComplaint" className="flex items-center gap-2">
                   <ClipboardList size={18} className="text-blue-600" />
                   Present Complaint
@@ -142,326 +206,15 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
                 <Textarea
                   id="presentComplaint"
                   value={presentComplaint}
-                  onChange={(e:any) => setPresentComplaint(e.target.value)}
+                  onChange={(e: any) => setPresentComplaint(e.target.value)}
                   placeholder="Describe the present complaint..."
                   rows={6}
                   className="mt-2"
                 />
               </div>
 
-              {/* Procedures */}
-              <div>
-                <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Stethoscope size={20} className="text-blue-600" />
-                  Procedure
-                </Label>
-                <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="syringingR"
-                      checked={procedures.syringingR}
-                      onCheckedChange={(checked:any) =>
-                        setProcedures({ ...procedures, syringingR: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="syringingR" className="cursor-pointer mb-0">
-                      Syringing R/L (Wax drops First, if __day)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="microscopeExam"
-                      checked={procedures.microscopeExam}
-                      onCheckedChange={(checked: any) =>
-                        setProcedures({ ...procedures, microscopeExam: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="microscopeExam" className="cursor-pointer mb-0">
-                      Micro-scope exam (MSE)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="nasoendoscopy"
-                      checked={procedures.nasoendoscopy}
-                      onCheckedChange={(checked:boolean) =>
-                        setProcedures({ ...procedures, nasoendoscopy: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="nasoendoscopy" className="cursor-pointer mb-0">
-                      Nasoendoscopy (NE)
-                    </Label>
-                  </div>
-                </div>
-
-                {/* Audiology Investigations */}
-                <Label className="text-lg font-semibold mt-6 mb-3 flex items-center gap-2">
-                  <Activity size={20} className="text-blue-600" />
-                  Audiology Investigations
-                </Label>
-                <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="ptAudio"
-                      checked={audiologyTests.ptAudio}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({ ...audiologyTests, ptAudio: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="ptAudio" className="cursor-pointer mb-0">
-                      PT Audio
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="tympanometry"
-                      checked={audiologyTests.tympanometry}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({ ...audiologyTests, tympanometry: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="tympanometry" className="cursor-pointer mb-0">
-                      Tympanometry
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="stapedialReflexes"
-                      checked={audiologyTests.stapedialReflexes}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({
-                          ...audiologyTests,
-                          stapedialReflexes: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="stapedialReflexes" className="cursor-pointer mb-0">
-                      Stapedial reflexes
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="speechAudio"
-                      checked={audiologyTests.speechAudio}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({ ...audiologyTests, speechAudio: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="speechAudio" className="cursor-pointer mb-0">
-                      Speech audio
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="oae"
-                      checked={audiologyTests.oae}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({ ...audiologyTests, oae: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="oae" className="cursor-pointer mb-0">
-                      OAE
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="abr"
-                      checked={audiologyTests.abr}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({ ...audiologyTests, abr: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="abr" className="cursor-pointer mb-0">
-                      ABR
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="vestibularTest"
-                      checked={audiologyTests.vestibularTest}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTests({
-                          ...audiologyTests,
-                          vestibularTest: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="vestibularTest" className="cursor-pointer mb-0">
-                      VESTIBULAR FUNCTION TESTS
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Examination */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye size={24} className="text-blue-600" />
-              Examination
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Ear Examination Diagram */}
-              <div>
-                <Label className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Ear size={20} className="text-blue-600" />
-                  Ear Examination
-                </Label>
-                <div className="flex justify-around items-center mb-4">
-                  <div className="text-center">
-                    <div className="w-32 h-32 border-4 border-gray-800 rounded-full mb-2 flex items-center justify-center bg-gray-50">
-                      <Ear size={48} className="text-gray-300" />
-                    </div>
-                    <div className="text-sm font-semibold">R</div>
-                    <Input
-                      value={examination.rightEar}
-                      onChange={(e:any) =>
-                        setExamination({ ...examination, rightEar: e.target.value })
-                      }
-                      placeholder="VII"
-                      className="mt-2 w-32"
-                    />
-                  </div>
-                  <div className="text-center">
-                    <div className="w-32 h-32 border-4 border-gray-800 rounded-full mb-2 flex items-center justify-center bg-gray-50">
-                      <Ear size={48} className="text-gray-300" />
-                    </div>
-                    <div className="text-sm font-semibold">L</div>
-                    <Input
-                      value={examination.leftEar}
-                      onChange={(e:any) =>
-                        setExamination({ ...examination, leftEar: e.target.value })
-                      }
-                      placeholder="512"
-                      className="mt-2 w-32"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-around mt-4">
-                  <div className="text-center">
-                    <Label>R</Label>
-                    <Input
-                      value={examination.rightNose}
-                      onChange={(e:any) =>
-                        setExamination({ ...examination, rightNose: e.target.value })
-                      }
-                      placeholder="Nose R"
-                      className="mt-2 w-32"
-                    />
-                  </div>
-                  <div className="text-center">
-                    <Label>L</Label>
-                    <Input
-                      value={examination.leftNose}
-                      onChange={(e:any) =>
-                        setExamination({ ...examination, leftNose: e.target.value })
-                      }
-                      placeholder="Nose L"
-                      className="mt-2 w-32"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Audiology Treatment */}
-              <div>
-                <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Stethoscope size={20} className="text-blue-600" />
-                  Audiology Treatment
-                </Label>
-                <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="hearingAid"
-                      checked={audiologyTreatment.hearingAid}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTreatment({
-                          ...audiologyTreatment,
-                          hearingAid: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="hearingAid" className="cursor-pointer mb-0">
-                      Hearing aid
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="hearingAidReview"
-                      checked={audiologyTreatment.hearingAidReview}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTreatment({
-                          ...audiologyTreatment,
-                          hearingAidReview: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="hearingAidReview" className="cursor-pointer mb-0">
-                      Hearing aid review/repair
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="hearingTinnitusRehab"
-                      checked={audiologyTreatment.hearingTinnitusRehab}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTreatment({
-                          ...audiologyTreatment,
-                          hearingTinnitusRehab: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="hearingTinnitusRehab" className="cursor-pointer mb-0">
-                      Hearing/tinnitus rehab.
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="speechLanguage"
-                      checked={audiologyTreatment.speechLanguage}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTreatment({
-                          ...audiologyTreatment,
-                          speechLanguage: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="speechLanguage" className="cursor-pointer mb-0">
-                      Speech and language
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="assessmentRehab"
-                      checked={audiologyTreatment.assessmentRehab}
-                      onCheckedChange={(checked: any) =>
-                        setAudiologyTreatment({
-                          ...audiologyTreatment,
-                          assessmentRehab: checked as boolean,
-                        })
-                      }
-                    />
-                    <Label htmlFor="assessmentRehab" className="cursor-pointer mb-0">
-                      Assessment/rehab.
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Past Medical History and Main Diagnosis */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Past Medical History */}
-              <div>
+              <div className="flex-1">
                 <Label htmlFor="pastMedicalHistory" className="flex items-center gap-2">
                   <FileText size={18} className="text-blue-600" />
                   Past Medical History
@@ -469,133 +222,253 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
                 <Textarea
                   id="pastMedicalHistory"
                   value={pastMedicalHistory}
-                  onChange={(e:any) => setPastMedicalHistory(e.target.value)}
+                  onChange={(e: any) => setPastMedicalHistory(e.target.value)}
                   placeholder="Past medical history..."
                   rows={6}
                   className="mt-2"
                 />
-              </div>
+              </div>   
+                      
+            </div>
+          </CardContent>
+        </Card>
+        {/* ── Procedures ── */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              
 
-              {/* Main Diagnosis */}
-              <div>
+              {/* Procedures + Audiology Investigations */}
+              <div className="flex-1 flex flex-col">
                 <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <ClipboardList size={20} className="text-blue-600"/>
-                  Main Diagnosis (for each ear R / L / Bilat)
+                  <Stethoscope size={20} className="text-blue-600" />
+                  Procedure
                 </Label>
-
-                <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
-
-                  {diagnosisList.map((item)=>(
-                    <div key={item.key} className="grid grid-cols-4 items-center gap-3">
-
-                      <span className="text-sm">{item.label}</span>
-
+                <div className="flex flex-col gap-3 border rounded-lg p-4">
+                  {[
+                    { id: "syringingR",    key: "syringingR",    label: "Syringing R/L (Wax drops First, if __day)" },
+                    { id: "microscopeExam",key: "microscopeExam",label: "Micro-scope exam (MSE)" },
+                    { id: "nasoendoscopy", key: "nasoendoscopy", label: "Nasoendoscopy (NE)" },
+                  ].map(({ id, key, label }) => (
+                    <div key={id} className="flex items-center gap-2">
                       <Checkbox
-                        checked={diagnosis[item.key].r}
-                        onCheckedChange={(v:boolean)=>
-                          setDiagnosis({
-                            ...diagnosis,
-                            [item.key]:{
-                              ...diagnosis[item.key],
-                              r:v
-                            }
-                          })
+                        id={id}
+                        checked={(procedures as any)[key]}
+                        onCheckedChange={(checked: boolean) =>
+                          setProcedures({ ...procedures, [key]: checked })
                         }
                       />
-
-                      <Checkbox
-                        checked={diagnosis[item.key].l}
-                        onCheckedChange={(v:boolean)=>
-                          setDiagnosis({
-                            ...diagnosis,
-                            [item.key]:{
-                              ...diagnosis[item.key],
-                              l:v
-                            }
-                          })
-                        }
-                      />
-
-                      <Checkbox
-                        checked={diagnosis[item.key].bilat}
-                        onCheckedChange={(v:boolean)=>
-                          setDiagnosis({
-                            ...diagnosis,
-                            [item.key]:{
-                              ...diagnosis[item.key],
-                              bilat:v
-                            }
-                          })
-                        }
-                      />
-
+                      <Label htmlFor={id} className="cursor-pointer mb-0">{label}</Label>
                     </div>
                   ))}
-
-                  <div className="flex gap-6 pt-4">
-                    <label className="flex items-center gap-2">
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col">
+                <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Activity size={20} className="text-blue-600" />
+                  Audiology Investigations
+                </Label>
+                <div className="flex flex-col gap-3 border rounded-lg p-4 ">
+                  {[
+                    { id: "ptAudio",           key: "ptAudio",           label: "PT Audio" },
+                    { id: "tympanometry",      key: "tympanometry",      label: "Tympanometry" },
+                    { id: "stapedialReflexes", key: "stapedialReflexes", label: "Stapedial reflexes" },
+                    { id: "speechAudio",       key: "speechAudio",       label: "Speech audio" },
+                    { id: "oae",               key: "oae",               label: "OAE" },
+                    { id: "abr",               key: "abr",               label: "ABR" },
+                    { id: "vestibularTest",    key: "vestibularTest",    label: "VESTIBULAR FUNCTION TESTS" },
+                  ].map(({ id, key, label }) => (
+                    <div key={id} className="flex items-center gap-2">
                       <Checkbox
-                        checked={diagnosis.vertigoBalance}
-                        onCheckedChange={(v:boolean)=>setDiagnosis({...diagnosis, vertigoBalance:v})}
+                        id={id}
+                        checked={(audiologyTests as any)[key]}
+                        onCheckedChange={(checked: boolean) =>
+                          setAudiologyTests({ ...audiologyTests, [key]: checked })
+                        }
                       />
-                      Vertigo / Balance
-                    </label>
-
-                    <label className="flex items-center gap-2">
+                      <Label htmlFor={id} className="cursor-pointer mb-0">{label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Audiology Treatment */}
+              <div className="flex-1">
+                <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Stethoscope size={20} className="text-blue-600" />
+                  Audiology Treatment
+                </Label>
+                <div className="flex flex-col gap-3 border rounded-lg p-4 ">
+                  {[
+                    { id: "hearingAid",          key: "hearingAid",          label: "Hearing aid" },
+                    { id: "hearingAidReview",     key: "hearingAidReview",    label: "Hearing aid review/repair" },
+                    { id: "hearingTinnitusRehab", key: "hearingTinnitusRehab",label: "Hearing/tinnitus rehab." },
+                    { id: "speechLanguage",       key: "speechLanguage",      label: "Speech and language" },
+                    { id: "assessmentRehab",      key: "assessmentRehab",     label: "Assessment/rehab." },
+                  ].map(({ id, key, label }) => (
+                    <div key={id} className="flex items-center gap-2">
                       <Checkbox
-                        checked={diagnosis.tinnitus}
-                        onCheckedChange={(v:boolean)=>setDiagnosis({...diagnosis, tinnitus:v})}
+                        id={id}
+                        checked={(audiologyTreatment as any)[key]}
+                        onCheckedChange={(checked: boolean) =>
+                          setAudiologyTreatment({ ...audiologyTreatment, [key]: checked })
+                        }
                       />
-                      Tinnitus
-                    </label>
-                  </div>
-
-                  <Input
-                    placeholder="Other diagnosis..."
-                    value={diagnosis.other}
-                    onChange={(e:any)=>setDiagnosis({...diagnosis, other:e.target.value})}
-                  />
-
+                      <Label htmlFor={id} className="cursor-pointer mb-0">{label}</Label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Treatment Plan and Notes */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Treatment Plan */}
-              <div>
-                <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <ClipboardList size={20} className="text-blue-600" />
-                  Treatment Plan
+        {/* ── Examination  & Main Diagnosis── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye size={24} className="text-blue-600" />
+              Examination
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col lg:flex-row gap-8">
+
+              {/* Ear diagram */}
+              <div className="flex-1">
+                <Label className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Ear size={20} className="text-blue-600" />
+                  Ear Examination
                 </Label>
-                <div className="space-y-3">
-                  {treatmentPlan.map((plan, index) => (
-                    <div key={index}>
-                      <Label htmlFor={`treatment${index + 1}`} className="text-sm">
-                        {index + 1}.
-                      </Label>
+                <div className="flex justify-around items-center mb-4">
+                  {[
+                    { side: "R", field: "rightEar", placeholder: "VII" },
+                    { side: "L", field: "leftEar",  placeholder: "512" },
+                  ].map(({ side, field, placeholder }) => (
+                    <div key={side} className="flex flex-col items-center">
+                      <div className="w-32 h-32 border-4 border-gray-800 rounded-full mb-2 flex items-center justify-center bg-gray-50">
+                        <Ear size={48} className="text-gray-300" />
+                      </div>
+                      <div className="text-sm font-semibold">{side}</div>
                       <Input
-                        id={`treatment${index + 1}`}
-                        value={plan}
-                        onChange={(e:any) => {
-                          const newPlan = [...treatmentPlan];
-                          newPlan[index] = e.target.value;
-                          setTreatmentPlan(newPlan);
-                        }}
-                        placeholder={`Treatment step ${index + 1}`}
-                        className="mt-1"
+                        value={(examination as any)[field]}
+                        onChange={(e: any) => setExamination({ ...examination, [field]: e.target.value })}
+                        placeholder={placeholder}
+                        className="mt-2 w-32"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-around mt-4">
+                  {[
+                    { side: "R", field: "rightNose", placeholder: "Nose R" },
+                    { side: "L", field: "leftNose",  placeholder: "Nose L" },
+                  ].map(({ side, field, placeholder }) => (
+                    <div key={side} className="flex flex-col items-center">
+                      <Label>{side}</Label>
+                      <Input
+                        value={(examination as any)[field]}
+                        onChange={(e: any) => setExamination({ ...examination, [field]: e.target.value })}
+                        placeholder={placeholder}
+                        className="mt-2 w-32"
                       />
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Main Diagnosis */}
+              <div className="flex-1">
+                <Label className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <ClipboardList size={20} className="text-blue-600" />
+                  Main Diagnosis (for each ear R / L / Bilat)
+                </Label>
+
+                <div className="border rounded-lg p-4 flex flex-col gap-2">
+
+                  {/* Column header row */}
+                  <div className="flex items-center pb-1 border-b border-gray-200">
+                    <span className="flex-1 text-xs font-semibold text-gray-500">Diagnosis</span>
+                    <span className="w-10 text-center text-xs font-semibold text-gray-500">R</span>
+                    <span className="w-10 text-center text-xs font-semibold text-gray-500">L</span>
+                    <span className="w-14 text-center text-xs font-semibold text-gray-500">Bilat</span>
+                  </div>
+
+                  {/* Diagnosis rows */}
+                  {diagnosisList.map((item) => (
+                    <div key={item.key} className="flex items-center py-0.5">
+                      <span className={`flex-1 text-sm ${diagnosis[item.key] ? "font-semibold text-blue-700" : "text-gray-700"}`}>
+                        {item.label}
+                      </span>
+                      {(["R", "L", "Bilat"] as EarSide[]).map((side) => (
+                        <div key={side} className={`flex justify-center ${side === "Bilat" ? "w-14" : "w-10"}`}>
+                          <button
+                            type="button"
+                            onClick={() => selectSide(item.key, side)}
+                            className={`w-6 h-6 rounded-full border-2 transition-colors flex items-center justify-center
+                              ${diagnosis[item.key] === side
+                                ? "bg-blue-600 border-blue-600"
+                                : "bg-white border-gray-300 hover:border-blue-400"
+                              }`}
+                          >
+                            {diagnosis[item.key] === side && <Check size={12} className="text-white" />}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* Vertigo / Tinnitus */}
+                  <div className="flex gap-6 pt-3 border-t border-gray-200">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={diagnosis.vertigoBalance}
+                        onCheckedChange={(v: boolean) => setDiagnosis({ ...diagnosis, vertigoBalance: v })}
+                      />
+                      <span className="text-sm">Vertigo / Balance</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={diagnosis.tinnitus}
+                        onCheckedChange={(v: boolean) => setDiagnosis({ ...diagnosis, tinnitus: v })}
+                      />
+                      <span className="text-sm">Tinnitus</span>
+                    </label>
+                  </div>
+
+                  {/* Other */}
+                  <Input
+                    placeholder="Other diagnosis..."
+                    value={diagnosis.other}
+                    onChange={(e: any) => setDiagnosis({ ...diagnosis, other: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {/* ── Treatment Plan & Notes ── */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+
+              {/* Treatment Plan */}
+              <div className="flex-1">
+                <Label htmlFor="treatmentPlan" className="flex items-center gap-2">
+                  <ClipboardList size={18} className="text-blue-600" />
+                  Treatment Plans
+                </Label>
+                <Textarea
+                  id="treatmentPlan"
+                  value={notes}
+                  onChange={(e: any) => setTreatmentPlan(e.target.value)}
+                  placeholder="Treatment plan..."
+                  rows={10}
+                  className="mt-2"
+                />
+              </div>
+
               {/* Notes */}
-              <div>
+              <div className="flex-1">
                 <Label htmlFor="notes" className="flex items-center gap-2">
                   <FileText size={18} className="text-blue-600" />
                   Notes
@@ -603,7 +476,7 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
                 <Textarea
                   id="notes"
                   value={notes}
-                  onChange={(e:any) => setNotes(e.target.value)}
+                  onChange={(e: any) => setNotes(e.target.value)}
                   placeholder="Additional notes..."
                   rows={10}
                   className="mt-2"
@@ -612,108 +485,82 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
             </div>
           </CardContent>
         </Card>
-      {/* Buttons */}
-      <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" icon={Printer} onClick={() => window.print()}>Print</Button>
-        <Button type="submit" icon={Save}>Save Consultant Notes</Button>
-      </div>
-    </form>
-  </>
+
+        {/* ── Buttons ── */}
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" icon={Printer} onClick={() => window.print()}>
+            Print
+          </Button>
+          <Button type="submit" icon={Save}>
+            Save Consultant Notes
+          </Button>
+        </div>
+      </form>
+    </>
   );
-}
+};
+
 export default ENTConsultantNotesForm;
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-6 py-4 flex items-center gap-2">
-        <Stethoscope className="w-5 h-5 text-blue-600" />
-        <h2 className="text-base font-semibold text-gray-800">
-          {title}
-        </h2>
-      </div>
-      <div className="p-6 space-y-5">{children}</div>
-    </div>
-  );
-}
+// ─── UI primitives ────────────────────────────────────────────────────────────
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+const Button = ({ children, className = "", variant = "primary", icon: Icon, ...props }: any) => {
+  const base = "px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors font-medium flex items-center gap-2 justify-center";
+  const variants: any = {
+    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500",
+    primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
+  };
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-const Button = ({ children, className = '', variant = 'primary', icon: Icon, ...props }:(any)) => {
-  const baseClasses = 'px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors font-medium flex items-center gap-2 justify-center';
-  const variantClasses = variant === 'outline' 
-    ? 'border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500'
-    : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500';
-  
-  return (
-    <button className={`${baseClasses} ${variantClasses} ${className}`} {...props}>
+    <button className={`${base} ${variants[variant] ?? variants.primary} ${className}`} {...props}>
       {Icon && <Icon size={18} />}
       {children}
     </button>
   );
 };
 
-const Card = ({ children, className = '' }:(any)) => (
+const Card = ({ children, className = "" }: any) => (
   <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>{children}</div>
 );
-
-const CardHeader = ({ children, className = '' }:(any)) => <div className={`p-6 ${className}`}>{children}</div>;
-const CardTitle = ({ children, className = '' }:(any)) => <h3 className={`text-2xl font-semibold text-gray-900 ${className}`}>{children}</h3>;
-const CardContent = ({ children, className = '' }:(any)) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
-
-const Label = ({ children, htmlFor, className = '' }:(any)) => (
-  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 mb-2 ${className}`}>{children}</label>
+const CardHeader = ({ children, className = "" }: any) => (
+  <div className={`p-6 ${className}`}>{children}</div>
 );
-
-const Input = ({ className = '', icon: Icon, ...props }:(any)) => (
+const CardTitle = ({ children, className = "" }: any) => (
+  <h3 className={`text-2xl font-semibold text-gray-900 ${className}`}>{children}</h3>
+);
+const CardContent = ({ children, className = "" }: any) => (
+  <div className={`p-6 pt-0 ${className}`}>{children}</div>
+);
+const Label = ({ children, htmlFor, className = "" }: any) => (
+  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 mb-2 ${className}`}>
+    {children}
+  </label>
+);
+const Input = ({ className = "", icon: Icon, ...props }: any) => (
   <div className="relative">
     {Icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><Icon size={18} /></div>}
     <input
-      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${Icon ? 'pl-10' : ''} ${className}`}
+      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${Icon ? "pl-10" : ""} ${className}`}
       {...props}
     />
   </div>
 );
-
-const Checkbox = ({ checked, onCheckedChange, id, className = '' }:(any)) => (
+const Checkbox = ({ checked, onCheckedChange, id, className = "" }: any) => (
   <button
     type="button"
     role="checkbox"
     aria-checked={checked}
     onClick={() => onCheckedChange(!checked)}
-    className={`w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center cursor-pointer transition-colors ${checked ? 'bg-blue-600 border-blue-600' : 'bg-white'} ${className}`}
     id={id}
+    className={`w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center cursor-pointer transition-colors ${
+      checked ? "bg-blue-600 border-blue-600" : "bg-white"
+    } ${className}`}
   >
     {checked && <Check size={14} className="text-white" />}
   </button>
 );
-
-const Textarea = ({ className = '', ...props }) => (
+const Textarea = ({ className = "", ...props }: any) => (
   <textarea
     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${className}`}
     {...props}
   />
 );
-
-// export default ENTConsultantNotes;

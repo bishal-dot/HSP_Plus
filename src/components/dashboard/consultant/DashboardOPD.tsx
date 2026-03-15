@@ -193,7 +193,7 @@ const OPDDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white leading-tight">
-                    OPD Dashboard
+                    OutPatient Department
                   </h1>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {isConsultant

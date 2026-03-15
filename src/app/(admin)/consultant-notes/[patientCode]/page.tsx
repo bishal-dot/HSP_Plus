@@ -142,7 +142,7 @@ export default function ConsultantNotesPage() {
         </h1>
       </div>
 
-    <div className="rounded-xl border border-gray-200 dark:bg-slate-800 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 dark:bg-slate-800 bg-white shadow-sm">
         <div className="p-5 space-y-4">
           {/* Patient Info */}
           <div className="grid lg:grid-cols-7 md:grid-cols-4 gap-4">
@@ -274,70 +274,69 @@ export default function ConsultantNotesPage() {
           </div>
         </div>
       </div>
-         {/* ================= Main Content ================= */}
-      {!activeTab && patientId && (
-        isENT ? (
-          <ENTConsultantNotesForm existingNotes={null} router={router} />
-        ) : (
-          <ConsultantNotesForm existingNotes={null} router={router} />
-        )
-      )} 
+      <div className="my-5">
+          {!activeTab && patientId && (
+            isENT ? (
+              <ENTConsultantNotesForm existingNotes={null} router={router} />
+            ) : (
+              <ConsultantNotesForm existingNotes={null} router={router} />
+            )
+          )} 
 
-       {activeTab === "consultant-notes" && patientId && (
-        showHistory ? (
-          <PreviousConsultantNotes
-            patientCode={patientId}
-            onCreateNew={() => setShowHistory(false)}
-          />
-        ) : (
-          isENT ? (
-            <ENTConsultantNotesForm existingNotes={null} router={router} />
-          ) : (
-            <ConsultantNotesForm existingNotes={null} router={router} />
-          )
-        )
-      )}
+          {activeTab === "consultant-notes" && patientId && (
+            showHistory ? (
+              <PreviousConsultantNotes
+                patientCode={patientId}
+                onCreateNew={() => setShowHistory(false)}
+              />
+            ) : (
+              isENT ? (
+                <ENTConsultantNotesForm existingNotes={null} router={router} />
+              ) : (
+                <ConsultantNotesForm existingNotes={null} router={router} />
+              )
+            )
+          )}
 
-      {activeTab === "prescription" && patientId && (
-        <PrescriptionForm patientCode={patientId} />
-      )}
+          {activeTab === "prescription" && patientId && (
+            <PrescriptionForm patientCode={patientId} />
+          )}
 
-      {activeTab === "services" && patientId && (
-        <ServiceComponent Patientcode={patientId} />
-      )}
+          {activeTab === "services" && patientId && (
+            <ServiceComponent Patientcode={patientId} />
+          )}
 
-      {activeTab === "imaging" && patientId && (
-        <ImagingRecords Patientcode={patientId} />
-      )}
+          {activeTab === "imaging" && patientId && (
+            <ImagingRecords Patientcode={patientId} />
+          )}
 
-      {activeTab === "laboratory" && patientId && (
-        <LaboratoryRecords Patientcode={patientId} />
-      )}
+          {activeTab === "laboratory" && patientId && (
+            <LaboratoryRecords Patientcode={patientId} />
+          )}
 
-      {activeTab === "patient-case" && patientId && (
-      <PatientClinicalRecordPage Patientcode={patientId}/>)}
+          {activeTab === "patient-case" && patientId && (
+          <PatientClinicalRecordPage Patientcode={patientId}/>)}
 
-      {activeTab === "progress-note" && patientId && (
-        <ProgressNotePage  PatientCode={patientId} />
-      )}
+          {activeTab === "progress-note" && patientId && (
+            <ProgressNotePage  PatientCode={patientId} />
+          )}
 
-      {activeTab === "bill-details" && patientId && (
-        <BillDetailsPage PatientCode={patientNo} />
-      )}
+          {activeTab === "bill-details" && patientId && (
+            <BillDetailsPage PatientCode={patientNo} />
+          )}
 
-      {activeTab === "operation-records" && patientId && (
-        <IPDOperationRecords PatientCode={patientId} />
-      )}
+          {activeTab === "operation-records" && patientId && (
+            <IPDOperationRecords PatientCode={patientId} />
+          )}
 
-      {activeTab === "discharge-summary" && patientId && (
-        <IPDDischargeSummary MrNO={patientId} />
-      )}
+          {activeTab === "discharge-summary" && patientId && (
+            <IPDDischargeSummary MrNO={patientId} />
+          )}
 
-      {activeTab === "referssd" &&  patientId && (
-        <SsdReferToPatientPage patientInfo={patientInfo} />
-      )}
-     
-      {/* <ConsultantNotes /> */}
+          {activeTab === "referssd" &&  patientId && (
+            <SsdReferToPatientPage patientInfo={patientInfo} />
+          )}
+      </div>
     </div>
   );
 }

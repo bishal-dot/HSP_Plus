@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Prepare parameters with correct SQL types
-    const params: DbParameter[] = [
+    const noteParams: DbParameter[] = [
       { name: 'UnkID', type: sql.BigInt(), value: generateUnkID() },
       { name: 'PatientCode', type: sql.NVarChar(50), value: patientCode },
       { name: 'RegCode', type: sql.Int(), value: Number(regCode) },
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     ];
 
     // Build the INSERT query
-    const query = `
+    const noteQuery = `
       INSERT INTO hsp_DoctorsNotePTWise (
         UnkID, PatientCode, RegCode, ConsultantCode, DeptCode, DateE,
         PresentComplaints, HOPI, PreviousHistory, MajorIllness, Allergies,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       )
     `;
 
-    await QueryDefault(query, params);
+    await QueryDefault(noteQuery, noteParams);
 
     return NextResponse.json({ success: true });
   } catch (error) {

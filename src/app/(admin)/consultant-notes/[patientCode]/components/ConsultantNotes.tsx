@@ -82,7 +82,6 @@ const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => 
 
   return (
     <>
-    
       {/* ================= History ================= */}
       <Section title="History">
         <div className="grid md:grid-cols-2 gap-5">

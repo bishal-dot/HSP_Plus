@@ -46,14 +46,14 @@ export default function Dashboard({ children }: { children: React.ReactNode; }) 
     );
   }
 
-  if (patientError) {
-    const errorMsg = patientErrorObj?.message || "An error occurred while loading data.";
-    return (
-      <div className="flex items-center justify-center min-h-screen p-6 text-red-600">
-        Error: {errorMsg}
-      </div>
-    );
-  }
+  // if (patientError) {
+  //   const errorMsg = patientErrorObj?.message || "An error occurred while loading data.";
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen p-6 text-red-600">
+  //       Error: {errorMsg}
+  //     </div>
+  //   );
+  // }
 
 
   return (

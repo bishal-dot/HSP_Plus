@@ -26,7 +26,7 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/dashboard",
-   subItems: [
+    subItems: [
       { name: "OPD", path: "/dashboard/opd", pro:false },
       { name: "IPD", path: "/dashboard/ipd", pro:false },
    ],
@@ -38,6 +38,11 @@ const navItems: NavItem[] = [
     name: "SSD Estimated",
     path: "/ssd-estimate",
   },
+  // {
+  //   icon: <UserCircleIcon />,
+  //   name: "Patient Document",
+  //   path: "/patientdocument",
+  // }
   // {
   //   icon: <UserCircleIcon />,
   //   name: "SSD Refferred",
@@ -273,107 +278,108 @@ const AppSidebar: React.FC = () => {
 
   return (
     <>
-    
-    <aside
-      className={`fixed mt-16 flex flex-col justify-between lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
-        ${isExpanded || isMobileOpen
-          ? "w-50"
-          : isHovered
+      <aside
+        className={`fixed mt-16 flex flex-col justify-between lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+          ${isExpanded || isMobileOpen
             ? "w-50"
-            : "w-22.5"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
-      onMouseEnter={() => !isExpanded && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-    <div>
-      <div
-        className={`py-3 flex  ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-center"
-          }`}
+            : isHovered
+              ? "w-50"
+              : "w-22.5"
+          }
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0`}
+        onMouseEnter={() => !isExpanded && setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <Link href="/">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <Image
-                width={50}
-                height={40}
-                className="dark:hidden"
-                src="/images/logo/inf-nepal-logo-dark.svg"
-                alt="Logo"
-              />
-              <Image
-                width={50}
-                height={40}
-                className="hidden dark:block"
-                src="/images/logo/inf-nepal-logo-light.svg"
-                alt="Logo"
-              />
-            </>
-          ) : (
-            <>
-              <Image
-                width={32}
-                height={32}
-                className="dark:hidden"
-                src="/images/logo/inf-nepal-logo-dark.svg"
-                alt="Logo"
-              />
-              <Image
-                width={32}
-                height={32}
-                className="hidden dark:block"
-                src="/images/logo/inf-nepal-logo-light.svg"
-                alt="Logo"
-              />
-            </>
-          )}
-        </Link>
-      </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav className="mb-6">
-          <div className="flex flex-col gap-4">
-            <div>
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(navItems, "main")}
-            </div>
+      <div>
+        <div
+          className={`py-3 flex  ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-center"
+            }`}
+        >
+          <Link href="/">
+            {isExpanded || isHovered || isMobileOpen ? (
+              <>
+                <Image
+                  width={50}
+                  height={40}
+                  className="dark:hidden"
+                  src="/images/logo/inf-nepal-logo-dark.svg"
+                  alt="Logo"
+                />
+                <Image
+                  width={50}
+                  height={40}
+                  className="hidden dark:block"
+                  src="/images/logo/inf-nepal-logo-light.svg"
+                  alt="Logo"
+                />
+              </>
+            ) : (
+              <>
+                <Image
+                  width={32}
+                  height={32}
+                  className="dark:hidden"
+                  src="/images/logo/inf-nepal-logo-dark.svg"
+                  alt="Logo"
+                />
+                <Image
+                  width={32}
+                  height={32}
+                  className="hidden dark:block"
+                  src="/images/logo/inf-nepal-logo-light.svg"
+                  alt="Logo"
+                />
+              </>
+            )}
+          </Link>
+        </div>
+        <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+          <nav className="mb-6">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${!isExpanded && !isHovered
+                    ? "lg:justify-between"
+                    : "justify-start"
+                    }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    "Menu"
+                  ) : (
+                    <HorizontaLDots />
+                  )}
+                </h2>
+                {renderMenuItems(navItems, "main")}
+              </div>
 
-            {/* <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
-            </div> */}
-          </div>
-        </nav>
-        {isExpanded || isHovered || isMobileOpen ? null : null}
-      </div> 
-      </div>  
-      
-      <div className={`shrink-0 border-t border-gray-200 dark:border-gray-800 pt-3 pb-4 ${isExpanded || isHovered ? "overflow-visible transition-all duration-300 ease-in-out" : "overflow-hidden"}`}>
-        <UserDropdown userName={username} />
-      </div>
-    </aside>
+              {/* <div className="">
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${!isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                    }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    "Others"
+                  ) : (
+                    <HorizontaLDots />
+                  )}
+                </h2>
+                {renderMenuItems(othersItems, "others")}
+              </div> */}
+            </div>
+          </nav>
+          {isExpanded || isHovered || isMobileOpen ? null : null}
+        </div> 
+        </div>  
+        <div className={`hidden lg:block shrink-0 border-t border-gray-200 dark:border-gray-800 pt-3 pb-4 ${isExpanded || isHovered || isMobileOpen ? "overflow-visible transition-all duration-300 ease-in-out" : "overflow-hidden"}`}>
+          <UserDropdown 
+            userName={username}
+            isSidebarOpen={isExpanded || isHovered || isMobileOpen}
+           />
+        </div>
+      </aside>
     </>
   );
 };

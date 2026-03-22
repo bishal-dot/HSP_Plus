@@ -11,6 +11,8 @@ export default function Page(){
     if(stored) setPatientInfo(JSON.parse(stored));
   },[]);
 
+  console.log("patientInfoFromSession:", patientInfo);
+
   if(!patientInfo) return (<div className="min-h-screen flex items-center justify-center">Patient not found!</div>);
 
   return <SsdReferToPatientPage patientInfo={patientInfo} />

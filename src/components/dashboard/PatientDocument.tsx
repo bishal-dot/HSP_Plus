@@ -13,6 +13,8 @@ import {
   Plus,
   Check,
 } from "lucide-react";
+import { usePatientMaster } from "@/queries/patient-document.queries";
+import { useAuthToken } from "@/context/AuthContext";
 
 /* =======================
    Types
@@ -50,7 +52,13 @@ const avatarGradients = [
    Component
 ======================= */
 
-export default function PatientDocument(){
+export default function PatientDocument(){ 
+
+  const { authToken } = useAuthToken();
+
+  const { data:PatientMaster } = usePatientMaster(authToken, {});
+  console.log("PatientMaster",PatientMaster);
+
   const [activeTab, setActiveTab] = useState<"active" | "all">("active");
   const [search, setSearch] = useState<string>("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);

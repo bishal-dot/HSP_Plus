@@ -17,7 +17,7 @@ export const useDischargedPatients = (
     }
 ) => {
     const today = new Date();
-    const defaultFrom = '2020-01-01'; // earliest date to fetch if not selected
+    const defaultFrom = '2026-01-01'; // earliest date to fetch if not selected
     const defaultTo = today.toISOString().split('T')[0];
     // Convert dates for backend
     const formattedParams = {

@@ -19,8 +19,6 @@ export interface patientResponse{
 export interface patientRequest{
     patientCode?: string;
     opdCode?: string;
-    pageNumber?: number;
-    pageSize?: number;
 }
 
 export interface opdPatientRequest {
@@ -233,4 +231,53 @@ export interface PatientServiceFormData {
     Remarks?: string;
     C_datetime?: Date | string;
     centercode?: number;
+}
+
+
+export interface PatientMasterResponse {
+  PatientCode: string;
+  Dept_Code?: number | null;
+  CenterCode?: number | null;
+  Manual_Regno?: string | null;
+  Firstname?: string | null;
+  MiddleName?: string | null;
+  LastName?: string | null;
+  District?: string | null;
+  VDC_municipality?: string | null;
+  Wardno?: string | null;
+  Tole?: string | null;
+  country?: string | null;
+  Birthpalce?: string | null;
+  DoB_N?: string | null;
+  DoB_E?: string | null;
+  RegisteredDate_E?: Date | null;
+  RegisteredDate_N?: string | null;
+  Phone?: string | null;
+  Mobile?: string | null;
+  Mobile1?: string | null;
+  Email?: string | null;
+  Age?: number | null;
+  Agetag?: string | null;
+  Sex?: string | null;
+  bloodGroup?: string | null;
+  PANNO?: string | null;
+  DiscountSchema?: number | null;
+  RateType?: number | null;
+  IdcardNo?: string | null;
+  CardType?: string | null;
+  MaritalStatus?: string | null;
+  Religion?: string | null;
+  Occupation?: string | null;
+  Guardian?: string | null;
+  Photo?: any | null; // You can change `any` to `Buffer` if using Node.js
+  IsExpired?: boolean | null;
+  ExpireDate_E?: Date | null;
+  ExpireDate_N?: string | null;
+  ExpireRemarks?: string | null;
+  CASTE?: string | null;
+  C_datetime?: Date | null;
+  De_active?: boolean | null;
+  c_user?: number | null;
+  M_user?: number | null;
+  M_date?: Date | null;
 }

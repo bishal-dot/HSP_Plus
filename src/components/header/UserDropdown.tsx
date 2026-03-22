@@ -3,9 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
 
-export default function UserDropdown({ userName }: { userName: string | null }) {
+export default function UserDropdown({ userName, isSidebarOpen }: { userName: string | null; isSidebarOpen: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
@@ -39,7 +40,20 @@ export default function UserDropdown({ userName }: { userName: string | null }) 
           />
         </span>
 
-        <div className="flex mr-1 font-medium text-theme-sm">{userName}</div>
+        {/* <div className="flex mr-1 font-medium text-theme-sm">{userName}</div> */}
+        <div
+          className={`
+            flex mr-1
+            font-medium text-theme-sm whitespace-wrap overflow-hidden
+            transition-all duration-300 ease-in-out
+            ${isSidebarOpen 
+              ? "opacity-100 ml-2 delay-200" 
+              : "opacity-0 max-w-0 ml-0"
+            }
+          `}
+        >
+          {userName}
+        </div>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
@@ -63,15 +77,15 @@ export default function UserDropdown({ userName }: { userName: string | null }) 
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute bottom-18 mt-4.25 flex w-full flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
+        className="absolute lg:bottom-15 right-0 md:m-t-17 mt-4.25 flex w-40 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
             {userName}
           </span>
         </div>
-
-        {/* <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+{/* 
+        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
           
           <li>
             <DropdownItem

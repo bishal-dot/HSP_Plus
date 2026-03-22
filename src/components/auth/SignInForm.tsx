@@ -102,7 +102,7 @@ export default function SignInForm() {
         login(data.data.tokenNo, data.data.userName, data.data.consultantCode);
         setUserRole(data.data.role || "consultant")
         setShowPanelModal(true);
-        // router.push("/dashboard");
+        router.push("/dashboard");
       } else {
         setError(data.error || "Login failed. Please check your credentials.");
       }
@@ -206,7 +206,7 @@ export default function SignInForm() {
           </div>
         </div>
       </div>
-      {showPanelModal && (
+      {/* {showPanelModal && (
         <PanelSelectionModal 
           onClose={(panel) => {
             setShowPanelModal(false);
@@ -217,7 +217,7 @@ export default function SignInForm() {
             }
           }}
         />
-      )}
+      )} */}
     </div>
   );
 }

@@ -49,15 +49,17 @@ const serviceTypesQueryKey = (patientCategory: number | undefined) => ["serviceT
 const servicesQueryKey = (patientCategory: number | undefined) => ["services", patientCategory];
 
 interface SsdReferToPatientProps {
-    patientInfo: patientResponse;
+    patientInfo: any;
 }
 
 export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatientProps) {
   const params = useParams();
   const router = useRouter();
   const { authToken } = useAuthToken();
+  const patientcode = patientInfo?.PatientCode || patientInfo?.MRNo;
+
   const { patientCode, patientRegCode } = params as {
-    patientCode: string;
+    patientCode: string; 
     patientRegCode: string;
   };
 
@@ -65,10 +67,7 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
   const [selectedService, setSelectedService] = useState<SingleValue<ServiceOption> | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [remarks, setRemarks] = useState<string>("");
-  const [patientState, setPatientState] = useState<inPatientResponse | null>(null);
-
- 
-
+  const [patientState, setPatientState] = useState<any | null>(null);
 
   useEffect(() => {
     if(!patientInfo){
@@ -76,25 +75,29 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
       if(stored) setPatientState(JSON.parse(stored));
     }
   },[patientInfo])
+  
+  const patientNo = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+  const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
 
-   const effectivePatient: NormalizedPatient = useMemo(() => {
+  const effectivePatient: NormalizedPatient = useMemo(() => {
   if (patientInfo) {
     // OPD patient
     return {
-      patientCode: patientInfo.PatientCode,
-      name: `${patientInfo.FirstName} ${patientInfo.LastName}`,
+      patientCode: patientId,
+      name: patientname,
       age: patientInfo.Age,
-      sex: patientInfo.Sex || "N/A",
+      sex: patientInfo.Sex || patientInfo.Gender,
       mobile: patientInfo.Mobile,
-      consultant: patientInfo.consultant,
-      facultyName: patientInfo.FacultyName,
+      consultant: patientInfo.ConsultingDoctor || patientInfo.CONSULTANT || patientInfo.BlockedBy,
+      facultyName: patientInfo.Gphreporting || patientInfo.WARD,
       admissionNo: patientInfo.AdmissionNo,
     };
   } else if (patientState) {
     // IPD patient
     return {
       patientCode: patientState.PatientCode,
-      name: patientState.patientname, // single string
+      name: patientState.PatientName || patientState.PATIENTNAME, // single string
       age: patientState.Age,
       sex: "N/A", // IPD has no sex field
       mobile: patientState.Mobile,

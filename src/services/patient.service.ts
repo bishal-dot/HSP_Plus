@@ -2,8 +2,9 @@
 import { Con_GetAsync, DbParameter, GetAsync, QueryDefault } from '@/lib/db';
 import { ApiRequest, ApiResponse, RequiredApiRequest } from '@/types/api.type';
 import { masterDbResponseWithToken } from '@/types/masterDb.type';
-import { dischargedPatientResponse, dischargedPatientsRequest, inPatientRequest, inPatientResponse, opdPatientDayWiseRequest, opdPatientDayWiseResponse, opdPatientRequest, opdPatientResponse, patientRequest, patientResponse } from '@/types/patient.type';
+import { dischargedPatientResponse, dischargedPatientsRequest, inPatientRequest, inPatientResponse, opdPatientDayWiseRequest, opdPatientDayWiseResponse, opdPatientRequest, opdPatientResponse, PatientMasterResponse, patientRequest, patientResponse } from '@/types/patient.type';
 import sql from 'mssql';
+import { NextRequest } from 'next/server';
 
 export async function fetchPatientInfo(request: RequiredApiRequest<patientRequest>): Promise<ApiResponse<patientResponse[]>> {
     // if (!request.data?.opdCode?.trim() || !request.data.patientCode?.trim()) {
@@ -52,8 +53,6 @@ export async function fetchPatientInfo(request: RequiredApiRequest<patientReques
 
         const dbParams: DbParameter[] = [
             { name: 'OpdCode', type: sql.NVarChar(50), value: request.data.opdCode || null },
-            { name: 'PageNumber', type: sql.Int(), value:request.data.pageNumber || 1 },
-            { name: 'PageSize', type: sql.Int(), value: request.data.pageSize || 10 },
         ];
         const patientDbResponse = await Con_GetAsync<patientResponse>(
             dbResponseItem.dbLink,
@@ -61,8 +60,7 @@ export async function fetchPatientInfo(request: RequiredApiRequest<patientReques
             dbParams
         );
 
-        
-          let filteredPatients = patientDbResponse;
+        let filteredPatients = patientDbResponse;
 
         if (request.data.patientCode?.trim()) {
         filteredPatients = filteredPatients.filter(p =>
@@ -329,6 +327,28 @@ export async function fetchDischargedPatientInfo(request:RequiredApiRequest<disc
             : 'No patients found',
         data: dischargedPatientResponse
         };
+    } catch{
+        return {
+            success: false,
+            message: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function getPatientMasterFromDb(){
+    try{
+        const dbPatientMasterResponse = await GetAsync<PatientMasterResponse>(
+            'GetPatient'
+        );
+
+        return {
+        success: true,
+        message: dbPatientMasterResponse.length
+            ? 'Data retrieved successfully'
+            : 'No patients found',
+        data: dbPatientMasterResponse
+        }
     } catch{
         return {
             success: false,

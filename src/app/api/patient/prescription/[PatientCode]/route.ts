@@ -4,12 +4,18 @@ import { createOrUpdatePrescription, getPrescriptionHistory } from "@/services/p
 // Get the patient's prescription history
 export async function GET(
   request: Request,
- {params}: { params: Promise<{ PatientCode: string }> }
+  { params }: { params: Promise<{ PatientCode: string }> }
 ) {
   try {
-    const { PatientCode }  = await params;
+    const { PatientCode } = await params;
 
-    const data = await getPrescriptionHistory(PatientCode);
+    // Extract tokenNo from headers (or adjust to query param if needed)
+    const tokenNo = request.headers.get("Authorization") ?? "";
+
+    const data = await getPrescriptionHistory({
+      tokenNo,
+      data: { PatientCode },
+    });
 
     return NextResponse.json(data);
   } catch (error: any) {
@@ -21,10 +27,24 @@ export async function GET(
 }
 
 // add new prescription data
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ PatientCode: string }> }
+) {
   try{
     const body = await request.json();
-    const result = await createOrUpdatePrescription(body);
+    const authHeader = request.headers.get("Authorization");
+    const tokenNo = authHeader?.replace("Bearer ", "") || "";
+
+    const result = await createOrUpdatePrescription(tokenNo, body);
+    if(!result.success){
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: result.message
+        }
+      );
+    }
     return NextResponse.json(
       { 
         success: true, 

@@ -22,14 +22,15 @@ export async function POST(request: NextRequest) {
       userId,
       formData,
     } = body;
-
     // Prepare parameters with correct SQL types
     const noteParams: DbParameter[] = [
       { name: 'UnkID', type: sql.BigInt(), value: generateUnkID() },
+      { name: 'FiscalYear', type: sql.VarChar(10), value: '2082/83' },
       { name: 'PatientCode', type: sql.NVarChar(50), value: patientCode },
       { name: 'RegCode', type: sql.Int(), value: Number(regCode) },
       { name: 'ConsultantCode', type: sql.Int(), value: Number(consultantCode) },
       { name: 'DeptCode', type: sql.Int(), value: Number(deptCode) },
+      { name: 'CenterID', type: sql.Int(), value: 1 },
 
       { name: 'PresentComplaints', type: sql.NVarChar(sql.MAX), value: formData.chiefComplaint || null },
       { name: 'HOPI', type: sql.NVarChar(sql.MAX), value: formData.hopi || null },
@@ -61,14 +62,14 @@ export async function POST(request: NextRequest) {
     // Build the INSERT query
     const noteQuery = `
       INSERT INTO hsp_DoctorsNotePTWise (
-        UnkID, PatientCode, RegCode, ConsultantCode, DeptCode, DateE,
+        UnkID, FiscalYear, PatientCode, RegCode, ConsultantCode, DeptCode, CenterID, DateE,
         PresentComplaints, HOPI, PreviousHistory, MajorIllness, Allergies,
         GeneralCondition, VitalsPR, VitalsRR, VitalsBP, VitalsSpoTwo, Temprature, CRT,
         VitalsRS, VitalsCVS, VitalsPerAbdomen, VitalsCNS, VitalsOthers,
         Diagnosis, ICDCODE, Advice, c_user, C_DTime
       )
       VALUES (
-        @UnkID, @PatientCode, @RegCode, @ConsultantCode, @DeptCode, GETDATE(),
+        @UnkID, @FiscalYear, @PatientCode, @RegCode, @ConsultantCode, @DeptCode, @CenterID, GETDATE(),
         @PresentComplaints, @HOPI, @PreviousHistory, @MajorIllness, @Allergies,
         @GeneralCondition, @VitalsPR, @VitalsRR, @VitalsBP, @VitalsSpoTwo, @Temprature, @CRT,
         @VitalsRS, @VitalsCVS, @VitalsPerAbdomen, @VitalsCNS, @VitalsOthers,
@@ -77,8 +78,9 @@ export async function POST(request: NextRequest) {
     `;
 
     await QueryDefault(noteQuery, noteParams);
-
     return NextResponse.json({ success: true });
+
+
   } catch (error) {
     console.error('Insert Error:', error);
     return NextResponse.json(

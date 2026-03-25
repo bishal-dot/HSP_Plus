@@ -1,11 +1,12 @@
 "use client";
 
 import DrawableCanvas, { Drawing } from "@/components/ui/drawable/DrawableCanvas";
+import { useAuthToken } from "@/context/AuthContext";
 import {
   Stethoscope, ClipboardList, FileText, Ear, Save,
   Printer, Activity, Eye, Check, X,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -58,6 +59,16 @@ const inputClass = `
 const textareaClass = `${inputClass} resize-none leading-relaxed`;
 
 const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => {
+  const { consultantCode } = useAuthToken();
+    const [patientInfo, setPatientInfo] = useState<any>(null);
+    useEffect(() => {
+        const stored = sessionStorage.getItem("selectedPatient");
+        if (stored) setPatientInfo(JSON.parse(stored));
+      }, []);
+  const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+  const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const regCode     = patientInfo?.RegNo || patientInfo?.RegCode;
+  
   const [presentComplaint,    setPresentComplaint]    = useState("");
   const [pastMedicalHistory,  setPastMedicalHistory]  = useState("");
   const [notes,               setNotes]               = useState("");
@@ -227,7 +238,7 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
               </div>
 
               {/* Nose */}
-              <div>
+              {/* <div>
                 <SectionLabel icon={<Eye className="w-3.5 h-3.5" />} label="Nose Examination" color="rose" />
                 <div className="flex justify-around items-start mt-3">
                   {([
@@ -238,7 +249,7 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
                       examination={examination} setExamination={setExamination} />
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Main Diagnosis */}

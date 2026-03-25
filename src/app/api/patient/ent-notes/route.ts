@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { patientInfo, payload } = body;
-        const { PatientCode, IPDCODE, AdmitDate } = patientInfo;
+        const { PatientCode, RegCode, RegNo, AdmitDate, Date } = patientInfo;
 
         // console.log("API POST:", body);
 
@@ -17,12 +17,12 @@ export async function POST(request: NextRequest) {
                         (FiscalYear, RegCode, PatientCode, TypeId, InvestigationId, Value)
                     VALUES (@FiscalYear, @RegCode, @PatientCode, @TypeId, @InvestigationId, @Value)
                 `, [
-                    { name: 'FiscalYear', type: sql.NVarChar(20), value: AdmitDate },
-                    { name: 'RegCode', type: sql.Int(), value: parseInt(IPDCODE) },
+                    { name: 'FiscalYear', type: sql.NVarChar(50), value: AdmitDate || Date },
+                    { name: 'RegCode', type: sql.Int(), value: parseInt(RegCode) || parseInt(RegNo) },
                     { name: 'PatientCode', type: sql.NVarChar(50), value: PatientCode },
                     { name: 'TypeId', type: sql.Int(), value: row.TypeId },
                     { name: 'InvestigationId', type: sql.Int(), value: row.InvestigationId },
-                    { name: 'Value', type: sql.NVarChar(50), value: row.Value },
+                    { name: 'Value', type: sql.NVarChar(sql.MAX), value: row.Value },
                 ]);
             } catch (err: any) {
                 console.error(" Error inserting row:", row);

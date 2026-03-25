@@ -52,10 +52,12 @@ export default function ConsultantNotesPage() {
     if (stored) setPatientInfo(JSON.parse(stored));
   }, []);
 
+  console.log("patientInfoFromSession:", patientInfo);
+
   const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
   const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
   const patientType = patientInfo ? (patientInfo.IPDCODE ? "ipd" : "opd") : null;
-  const isENT       = patientInfo?.FacultyName?.toLowerCase().includes("ent") ||
+  const isENT       = patientInfo?.TokenNo?.toLowerCase().includes("ent") ||
                       patientInfo?.wardName === "Ear Ward" ||
                       patientInfo?.WARD === "Ear Ward";
 

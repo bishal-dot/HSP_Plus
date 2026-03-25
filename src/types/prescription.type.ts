@@ -34,7 +34,7 @@ export interface PrescriptionHistoryResponse {
   PatientName: string;
   Age: string;
   Gender: string;
-  dept: string;
+  // dept: string;
   itemtype: number;
 
   DoctorName: string;
@@ -52,9 +52,9 @@ export interface Medication{
   timePeriod: string;
   instructions: string[];
   remarks: string;
-
+  medicineId: number;
   freqCode?: number;
-  routeCode?: number;
+  routeCode?: string;
 }
 
 export interface PrescriptionFormRequest{
@@ -64,6 +64,7 @@ export interface PrescriptionFormRequest{
   age?: string;
   gender?: string;
   doctorName?: string;
+  dept?: string;
 }
 
 export interface MedicineListRequest{

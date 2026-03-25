@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { useMedicineList, usePrescriptionHistory } from "../queries/prescription.queries";
 import { Medication, PrescriptionFormRequest } from "@/types/prescription.type";
 import { usePrescriptionMaster } from "@/queries/master.queries";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast, ToastContainer } from "react-toastify";
 
 interface MasterItem { Code: number; label: string }
 
@@ -20,14 +22,30 @@ const inputClass = `
   transition-all duration-150
 `;
 
+const DURATION_CODE: Record<string, string> = {
+  "Day(s)": "1", "Week(s)": "2", "Month(s)": "3"
+}
+
 const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
-  patientCode, patientName, regNo, age, gender, doctorName,
+  patientCode, patientName, regNo, age, gender, doctorName, dept
 }) => {
   const { authToken } = useAuthToken();
 
+ const [patientInfo, setPatientInfo] = useState<any>(null);
+  useEffect(() => {
+      const stored = sessionStorage.getItem("selectedPatient");
+      if (stored) setPatientInfo(JSON.parse(stored));
+    }, []);
+  const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+  const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const regCode     = patientInfo?.RegNo || patientInfo?.RegCode;
+  const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
+  const doctorname = patientInfo?.BlockedBy || patientInfo?.CONSULTANT;
+
+  const queryClient = useQueryClient();
+
   const [medications,          setMedications]          = useState<Medication[]>([]);
   const [activeTab,            setActiveTab]            = useState<"recent" | "backlog">("recent");
-  const [isSubmitting,         setIsSubmitting]         = useState(false);
   const [drugName,             setDrugName]             = useState("");
   const [dose,                 setDose]                 = useState("");
   const [selectedFrequency,    setSelectedFrequency]    = useState("");
@@ -40,6 +58,8 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
   const [medicineSearch,       setMedicineSearch]       = useState("");
   const [filteredMedicines,    setFilteredMedicines]    = useState<any[]>([]);
   const [selectedMedicineId,   setSelectedMedicineId]   = useState<number | null>(null);
+  const [selectedFreqCode,     setSelectedFreqCode]     = useState<number>(0);
+  const [selectedRouteCode,     setSelectedRouteCode]     = useState<string>("");
 
   const { data: prescriptionHistory, isLoading: isHistoryLoading, refetch } = usePrescriptionHistory(authToken, patientCode);
   const { data: masters,            isLoading: isMasterLoading }            = usePrescriptionMaster(authToken);
@@ -66,14 +86,26 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
     setDrugName(""); setMedicineSearch(""); setSelectedMedicineId(null);
     setDose(""); setSelectedFrequency(""); setSelectedRoute("");
     setDuration(""); setRemarks(""); setSelectedInstructions([]);
+    setSelectedFreqCode(0); setSelectedRouteCode("");
   };
 
   const handleAddMedication = () => {
     if (!drugName || !dose) return alert("Please enter Drug Name and Dose");
+    if(!selectedMedicineId) return alert("Please select a drug from the dropdown list");
+
     setMedications(prev => [...prev, {
-      id: Date.now().toString(), drugName, dose,
-      frequency: selectedFrequency, route: selectedRoute,
-      startDate, duration, timePeriod,
+      id: Date.now().toString(),
+      drugName, 
+      dose,
+      medicineId: selectedMedicineId,
+      frequency: selectedFrequency,
+      freqCode: selectedFreqCode, 
+      route: selectedRoute,
+      routeCode: selectedRouteCode,
+      startDate, 
+      duration, 
+      durationCode: DURATION_CODE[timePeriod] ?? "1",
+      timePeriod,
       instructions: selectedInstructions, remarks,
     }]);
     handleClearForm();
@@ -82,40 +114,57 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
   const toggleInstruction = (inst: string) =>
     setSelectedInstructions(prev => prev.includes(inst) ? prev.filter(i => i !== inst) : [...prev, inst]);
 
+
+  const { mutateAsync: savePrescription, isPending: isSubmitting } = useMutation({
+    mutationFn: async (med: Medication) => {
+      const res = await fetch(`/api/patient/prescription/${patientCode}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({
+        UnkId: 0, PatientCode: patientId, RegNo: regCode,
+        PrescriptionType: "Regular", DrugsCode: med.medicineId,
+        Dose: parseFloat(med.dose.trim()), Frequency: med.freqCode,
+        Route: med.routeCode, StartDate: med.startDate,
+        Duration: Number(med.duration) || 1, DurationOn: med.duration,
+        TotalQty: 0, Instruction: med.instructions.join(", "),
+        AdditionalInstr: med.remarks, PatientName: patientname,
+        Age: patientInfo?.Age, Gender: patientInfo?.Gender, DoctorName: doctorname,
+        Dept: patientInfo?.FacultyName
+      }),
+    });
+    if(!res.ok){
+      const err = await res.json();
+      throw new Error(err.message);
+    }
+    return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prescription-history", patientCode] });
+    },
+    onError: (err: any) => {
+      alert(err.message || "Error saving prescriptions.");
+    },
+  });
+
   const handleSubmit = async () => {
-    if (!medications.length) return alert("No medications to save.");
-    setIsSubmitting(true);
-    try {
-      await Promise.all(medications.map(med =>
-        fetch(`/api/patient/prescription/${patientCode}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
-          body: JSON.stringify({
-            UnkId: 0, PatientCode: patientCode, RegNo: regNo,
-            PrescriptionType: "Regular", DrugsCode: med.drugName,
-            Dose: parseFloat(med.dose.trim()), Frequency: med.freqCode,
-            Route: med.routeCode, StartDate: med.startDate,
-            Duration: Number(med.duration), DurationOn: med.timePeriod,
-            TotalQty: 0, Instruction: med.instructions.join(", "),
-            AdditionalInstr: med.remarks, PatientName: patientName,
-            Age: age, Gender: gender, DoctorName: doctorName,
-          }),
-        })
-      ));
-      alert("Prescription saved!");
-      setMedications([]); refetch();
-    } catch (e) { alert("Error saving prescription."); }
-    finally { setIsSubmitting(false); }
-  };
+    if(!medications.length) return alert("Please add at least one medication");
+    try{
+      await Promise.all(medications.map(med => savePrescription(med)));
+      toast.success("Prescriptions saved successfully!");
+      setMedications([]);
+    }catch{
+      toast.error("Failed to save prescriptions.");
+    }
+  }
 
   return (
+    <>
+    <ToastContainer position="top-right"/>
     <div className="grid lg:grid-cols-2 gap-5">
-
       {/* ══════════════════════════════
           LEFT — Form panel
-      ══════════════════════════════ */}
+          ══════════════════════════════ */}
       <div className="space-y-4">
-
         {/* New Medication card */}
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm dark:shadow-none overflow-hidden">
           <div className="h-0.5 w-full bg-gradient-to-r from-teal-500 via-cyan-400 to-teal-400" />
@@ -168,7 +217,11 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
                 <FieldLabel>Frequency</FieldLabel>
                 <div className="flex flex-wrap gap-1 mt-0.5">
                   {masterFrequencies.map((f: any, i: number) => (
-                    <ToggleBtn key={f.Code ?? i} active={selectedFrequency === f.label} onClick={() => setSelectedFrequency(f.label)}>
+                    <ToggleBtn key={f.Code ?? i} active={selectedFrequency === f.label} onClick={() => {
+                        setSelectedFrequency(f.label);
+                        setSelectedFreqCode(f.Code);
+                    }}
+                    >
                       {f.label}
                     </ToggleBtn>
                   ))}
@@ -181,7 +234,10 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
               <FieldLabel>Route</FieldLabel>
               <div className="grid grid-cols-2 gap-1.5 mt-0.5">
                 {masterRoutes.map((r: any, i: number) => (
-                  <ToggleBtn key={r.Code ?? i} active={selectedRoute === r.label} onClick={() => setSelectedRoute(r.label)} block>
+                  <ToggleBtn key={r.Code ?? i} active={selectedRoute === r.label} onClick={() => {
+                    setSelectedRoute(r.label);
+                    setSelectedRouteCode(r.Code);
+                  }} block>
                     {r.label}
                   </ToggleBtn>
                 ))}
@@ -382,6 +438,7 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
       </div>
 
     </div>
+  </>
   );
 };
 

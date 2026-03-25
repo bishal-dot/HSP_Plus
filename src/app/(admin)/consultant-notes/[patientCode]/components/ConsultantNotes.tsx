@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthToken } from "@/context/AuthContext";
 import {
   Stethoscope,
   HeartPulse,
@@ -10,7 +11,8 @@ import {
   X,
   Save,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 
 interface FormProps {
   existingNotes: any;
@@ -18,6 +20,18 @@ interface FormProps {
 }
 
 const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => {
+
+  const { consultantCode } = useAuthToken();
+  const [patientInfo, setPatientInfo] = useState<any>(null);
+  useEffect(() => {
+      const stored = sessionStorage.getItem("selectedPatient");
+      if (stored) setPatientInfo(JSON.parse(stored));
+    }, []);
+
+  const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+  const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const regCode     = patientInfo?.RegNo || patientInfo?.RegCode;
+
   const [formData, setFormData] = useState<any>({
     chiefComplaint: existingNotes?.history?.chiefComplaint || "",
     hopi: existingNotes?.history?.hopi || "",
@@ -41,28 +55,28 @@ const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => 
     icdCode: existingNotes?.assessment?.icdCode || "",
     advice: existingNotes?.assessment?.advicePlan || "",
   });
-
   const handleChange = (key: string, value: string) => {
     setFormData((prev: any) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async () => {
     try {
-      const patientInfo = JSON.parse(sessionStorage.getItem("selectedPatient") || "{}");
+      // const patientInfo = JSON.parse(sessionStorage.getItem("selectedPatient") || "{}");
+  
       const response = await fetch("/api/patient/consultant-notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patientCode: patientInfo?.PatientCode,
-          regCode: patientInfo?.TokenNo,
-          consultantCode: patientInfo?.ConsultantCode,
-          deptCode: patientInfo?.DeptCode,
-          userId: patientInfo?.UserId,
+          patientCode: patientId,
+          regCode: regCode,
+          consultantCode: consultantCode,
+          deptCode: 1,
+          userId: patientInfo?.Tokenid,
           formData,
         }),
       });
       const result = await response.json();
-      if (result.success) alert("Notes added successfully!");
+      if (result.success) toast.success("Notes saved successfully!");
       else alert("Failed to save notes");
     } catch (e) {
       alert("Something went wrong");
@@ -71,6 +85,8 @@ const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => 
 
   return (
     <div className="space-y-6 font-[family-name:var(--font-geist-sans)]">
+
+      <ToastContainer position="top-right"/>
 
       {/* ── History ── */}
       <Card

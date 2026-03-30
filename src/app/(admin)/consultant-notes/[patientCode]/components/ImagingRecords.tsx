@@ -4,6 +4,7 @@ import { useAuthToken } from "@/context/AuthContext";
 import { Image, FileText, Calendar, Search, ScanLine, AlertTriangle } from "lucide-react";
 import React, { useState } from "react";
 import { useImagingRecords } from "../queries/imaging-records.queries";
+import { get } from "http";
 
 interface props {
   Patientcode: string;
@@ -11,7 +12,7 @@ interface props {
 
 const ImagingRecords: React.FC<props> = ({ Patientcode }) => {
   const { authToken } = useAuthToken();
-  const { data: imagingRecords, isFetching, isError } = useImagingRecords(authToken, Patientcode);
+  const { data: imagingRecords, isFetching, isError: isImagingRecordsError } = useImagingRecords(authToken, Patientcode);
   const [search, setSearch] = useState("");
 
   const filtered = imagingRecords?.filter((r) =>
@@ -20,6 +21,12 @@ const ImagingRecords: React.FC<props> = ({ Patientcode }) => {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+
+  const getImageSrc = (dbPath: string) => {
+    if(!dbPath) return undefined;
+    const cleaned = dbPath.replace('~', process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000');
+    return encodeURI(cleaned);
+  };
 
   /* ── States ── */
   if (isFetching) return (
@@ -31,7 +38,7 @@ const ImagingRecords: React.FC<props> = ({ Patientcode }) => {
     </div>
   );
 
-  if (isError) return (
+  if (isImagingRecordsError) return (
     <div className="flex flex-col items-center justify-center py-20 gap-2">
       <AlertTriangle className="w-8 h-8 text-red-400" />
       <p className="text-sm text-slate-500 dark:text-slate-400">Failed to load imaging records</p>
@@ -121,7 +128,7 @@ const ImagingRecords: React.FC<props> = ({ Patientcode }) => {
                 ">
                   {record.URL ? (
                     <img
-                      src={record.URL}
+                      src={getImageSrc(record.URL)}
                       alt={record.DocumentTitle}
                       className="object-contain h-full w-full"
                     />

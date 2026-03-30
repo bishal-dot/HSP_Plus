@@ -1,16 +1,15 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { DbParameter, ExecuteAsync, QueryDefault } from '@/lib/db';
+import { DbParameter, ExecuteAsync, getDefaultPool, QueryDefault } from '@/lib/db';
 import sql from 'mssql';
+import { getNepaliFiscalYear } from '@/lib/utils';
 
 // Simple function to generate a unique bigint ID
-function generateUnkID(): bigint {
-  // Use current timestamp + random number to avoid collisions
-  return BigInt(Date.now() * 1000 + Math.floor(Math.random() * 1000));
-}
+
 
 export async function POST(request: NextRequest) {
+  
   try {
     const body = await request.json();
 
@@ -22,10 +21,17 @@ export async function POST(request: NextRequest) {
       userId,
       formData,
     } = body;
+
+    const pool = await getDefaultPool();
+    const maxRes = await pool.request()
+      .query(`SELECT ISNULL(MAX(UnkID), 0) + 1 AS NextID FROM GPHmd_LIVE.dbo.hsp_DoctorsNotePTWise`);
+    
+    const newUnkID = maxRes.recordset[0].NextID;
+    const fiscalYear = getNepaliFiscalYear();
     // Prepare parameters with correct SQL types
     const noteParams: DbParameter[] = [
-      { name: 'UnkID', type: sql.BigInt(), value: generateUnkID() },
-      { name: 'FiscalYear', type: sql.VarChar(10), value: '2082/83' },
+      { name: 'UnkID', type: sql.BigInt(), value: newUnkID },
+      { name: 'FiscalYear', type: sql.VarChar(10), value: fiscalYear },
       { name: 'PatientCode', type: sql.NVarChar(50), value: patientCode },
       { name: 'RegCode', type: sql.Int(), value: Number(regCode) },
       { name: 'ConsultantCode', type: sql.Int(), value: Number(consultantCode) },
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     // Build the INSERT query
     const noteQuery = `
-      INSERT INTO hsp_DoctorsNotePTWise (
+      INSERT INTO GPHmd_LIVE.dbo.hsp_DoctorsNotePTWise (
         UnkID, FiscalYear, PatientCode, RegCode, ConsultantCode, DeptCode, CenterID, DateE,
         PresentComplaints, HOPI, PreviousHistory, MajorIllness, Allergies,
         GeneralCondition, VitalsPR, VitalsRR, VitalsBP, VitalsSpoTwo, Temprature, CRT,

@@ -18,5 +18,7 @@ export const fetchPrescriptionHistory =async(
         throw new Error("Failed to fetch Prescription History");
     }
     const json = await response.json();
-     return Array.isArray(json) ? json : [];
+
+    if(!json.success) throw new Error(json.message || "Failed to fetch");
+    return Array.isArray(json.data) ? json.data : [];
 }

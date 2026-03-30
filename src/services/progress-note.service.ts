@@ -38,7 +38,7 @@ export async function getProgressNoteByMRNO(MRNO: string): Promise<ProgressNote[
         CENTERCODE,
         DEPTCODE,
         IPDCODE
-        FROM DOCTOR_PATIENTPROGRESSNOTE
+        FROM GPHmd_LIVE.dbo.DOCTOR_PATIENTPROGRESSNOTE
         WHERE MRNO = @MRNO
         ORDER BY C_DATE DESC
     `;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthToken } from "@/context/AuthContext";
+import { useMutation } from "@tanstack/react-query";
 import {
   Stethoscope,
   HeartPulse,
@@ -59,28 +60,36 @@ const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => 
     setFormData((prev: any) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async () => {
-    try {
-      // const patientInfo = JSON.parse(sessionStorage.getItem("selectedPatient") || "{}");
-  
-      const response = await fetch("/api/patient/consultant-notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientCode: patientId,
-          regCode: regCode,
-          consultantCode: consultantCode,
-          deptCode: 1,
-          userId: patientInfo?.Tokenid,
-          formData,
-        }),
-      });
-      const result = await response.json();
-      if (result.success) toast.success("Notes saved successfully!");
-      else alert("Failed to save notes");
-    } catch (e) {
-      alert("Something went wrong");
-    }
+  const saveNotes = async () => {
+    const response = await fetch("/api/patient/consultant-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        patientCode: patientId,
+        regCode: regCode,
+        consultantCode: consultantCode,
+        deptCode: 1,
+        userId: patientInfo?.Tokenid,
+        formData,
+      }),
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.message || "Failed to save notes");
+    return result;
+  }
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: saveNotes,
+    onSuccess: () => {
+      toast.success("Notes saved successfully");
+    },
+    onError: (err: any) => {
+      toast.error("Failed to save notes. Please try again.");
+    },
+  });
+
+  const handleSubmit = () => {
+    mutate();
   };
 
   return (
@@ -285,6 +294,7 @@ const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => 
 
           <button
             onClick={handleSubmit}
+            disabled={isPending}
             className="
               inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold
               bg-blue-600 hover:bg-blue-700
@@ -294,7 +304,7 @@ const ConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => 
             "
           >
             <Save className="w-3.5 h-3.5" />
-            {existingNotes ? "Update Notes" : "Save Notes"}
+            {isPending ? "Saving..." : "Save"}
           </button>
         </div>
       </div>

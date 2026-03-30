@@ -22,7 +22,7 @@ export async function getImagingRecords(patientCode: string): Promise<ImagingRec
         ImgDescription,
         Consultantcode,
         CONVERT(VARCHAR, TranDate, 111) AS TranDate
-        FROM HSP_PATIENTDOCUMENTMASTER
+        FROM GPHmd_LIVE.dbo.HSP_PATIENTDOCUMENTMASTER
         WHERE PatientCode = @patientCode
         AND ISNULL(IsLAborIMAGING, 0) = 1
         AND ISNULL(De_Active, 0) = 0

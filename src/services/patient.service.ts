@@ -339,7 +339,7 @@ export async function fetchDischargedPatientInfo(request:RequiredApiRequest<disc
 export async function getPatientMasterFromDb(){
     try{
         const dbPatientMasterResponse = await GetAsync<PatientMasterResponse>(
-            'GetPatient'
+            'GPHmd_LIVE.dbo.GetPatient'
         );
 
         return {

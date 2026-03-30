@@ -61,7 +61,7 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
   const [selectedFreqCode,     setSelectedFreqCode]     = useState<number>(0);
   const [selectedRouteCode,     setSelectedRouteCode]     = useState<string>("");
 
-  const { data: prescriptionHistory, isLoading: isHistoryLoading, refetch } = usePrescriptionHistory(authToken, patientCode);
+  const { data: prescriptionHistory, isLoading: isHistoryLoading, refetch } = usePrescriptionHistory(authToken, patientId);
   const { data: masters,            isLoading: isMasterLoading }            = usePrescriptionMaster(authToken);
   const { data: drugs }                                                      = useMedicineList(authToken, patientCode);
 

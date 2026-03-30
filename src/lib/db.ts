@@ -35,7 +35,7 @@ const defaultConfig: sql.config = {
 
 let defaultPool: Promise<sql.ConnectionPool> | null = null;
 
-function getDefaultPool(): Promise<sql.ConnectionPool> {
+export async function getDefaultPool(): Promise<sql.ConnectionPool> {
   if (!defaultPool) {
     defaultPool = new sql.ConnectionPool(defaultConfig)
       .connect()
@@ -47,6 +47,7 @@ function getDefaultPool(): Promise<sql.ConnectionPool> {
   }
   return defaultPool;
 }
+
 
 const dynamicPools = new Map<string, Promise<sql.ConnectionPool>>();
 
@@ -163,11 +164,19 @@ export async function GetAsObjectAsync(
 // ======================
 
 export async function QueryDefault<T>(sqlQuery:string,
-  parameters?: DbParameter[]
+  parameters?: DbParameter[],
+  transaction?: sql.Transaction
 ): Promise<T[]> {
   const pool = await getDefaultPool();
   const request = pool.request();
 
+  let transactionRequest: sql.Request;
+  if (transaction) {
+    transactionRequest = transaction.request();
+  } else {
+    transactionRequest = pool.request();
+  }
+  
   parameters?.forEach(param => {
     request.input(param.name, param.type, param.value);
   });

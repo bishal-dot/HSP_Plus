@@ -11,12 +11,13 @@ export async function GET(
 
     // Extract tokenNo from headers (or adjust to query param if needed)
     const tokenNo = request.headers.get("Authorization") ?? "";
+    const tokenNoWithoutBearer = tokenNo.replace("Bearer ", "");
 
     const data = await getPrescriptionHistory({
-      tokenNo,
+      tokenNo: tokenNoWithoutBearer,
       data: { PatientCode },
     });
-
+  
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json(

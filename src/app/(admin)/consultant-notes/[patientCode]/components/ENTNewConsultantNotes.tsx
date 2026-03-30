@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
+import { useMutation } from "@tanstack/react-query";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DiagnosisKey =
@@ -134,17 +135,36 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
     return rows;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveNotes = async () => {
     const patientInfo = JSON.parse(sessionStorage.getItem("selectedPatient") || "{}");
     const res  = await fetch("/api/patient/ent-notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ patientInfo, payload: buildPayload() }),
+      body: JSON.stringify({ 
+        patientInfo,
+        presentComplaint: presentComplaint,
+        previousHistory: pastMedicalHistory,
+        treatmentPlan, 
+        payload: buildPayload() }),
     });
     const result = await res.json();
-    if (result.success) toast.success("Notes saved successfully!");
-    else                toast.error("Failed to save notes.");
+    if (!result.success) throw new Error(result.message || 'Failed to save notes. Please try again.');
+    return result;
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: saveNotes,
+    onSuccess: () => {
+      toast.success("Notes saved successfully.");
+    },
+    onError: (err: any) => {
+      toast.error("Failed to save notes. Please try again.");
+    }
+  });
+
+  const handleSubmit =  (e: React.FormEvent) => {
+    e.preventDefault();
+    mutate();
   };
 
   return (
@@ -348,6 +368,7 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
               <Printer className="w-3.5 h-3.5" /> Print
             </button>
             <button type="submit"
+              disabled={isPending}
               className="
                 inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-semibold
                 bg-blue-600 hover:bg-blue-700
@@ -355,7 +376,8 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
                 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/40
                 transition-all duration-150 active:scale-[0.98]
               ">
-              <Save className="w-3.5 h-3.5" /> Save ENT Notes
+              <Save className="w-3.5 h-3.5" />
+              {isPending ? "Saving..." : "Save Notes"}
             </button>
           </div>
         </div>

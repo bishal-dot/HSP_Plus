@@ -19,7 +19,6 @@ export const usePrescriptionHistory = (token: string | null, PatientCode?: strin
       return fetchPrescriptionHistory(token!, PatientCode);
     },
     staleTime: 1000 * 30,
-    
   })
 }
 

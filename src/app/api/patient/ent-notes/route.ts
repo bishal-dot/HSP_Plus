@@ -1,36 +1,75 @@
-import { QueryDefault } from "@/lib/db";
+import { getDefaultPool, QueryDefault } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import sql from "mssql";
+import { getNepaliFiscalYear } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { patientInfo, payload } = body;
-        const { PatientCode, RegCode, RegNo, AdmitDate, Date } = patientInfo;
+        const { patientInfo, presentComplaints, previousHistory, treatmentPlan, payload } = body;
+        const { PatientCode, RegCode, RegNo, AdmitDate, Date: PatientDate } = patientInfo || {};
 
-        // console.log("API POST:", body);
-
-        for (const row of payload) {
-            try {
-                await QueryDefault(`
-                    INSERT INTO hsp_EarDiagnosisRecord
-                        (FiscalYear, RegCode, PatientCode, TypeId, InvestigationId, Value)
-                    VALUES (@FiscalYear, @RegCode, @PatientCode, @TypeId, @InvestigationId, @Value)
-                `, [
-                    { name: 'FiscalYear', type: sql.NVarChar(50), value: AdmitDate || Date },
-                    { name: 'RegCode', type: sql.Int(), value: parseInt(RegCode) || parseInt(RegNo) },
-                    { name: 'PatientCode', type: sql.NVarChar(50), value: PatientCode },
-                    { name: 'TypeId', type: sql.Int(), value: row.TypeId },
-                    { name: 'InvestigationId', type: sql.Int(), value: row.InvestigationId },
-                    { name: 'Value', type: sql.NVarChar(sql.MAX), value: row.Value },
-                ]);
-            } catch (err: any) {
-                console.error(" Error inserting row:", row);
-                console.error(err);  // <-- THIS will show the exact SQL error
-                throw err;           // rethrow so you still know the request failed
-            }
+        if (!PatientCode) {
+            return NextResponse.json({ success: false, message: "PatientCode is required" }, { status: 400 });
         }
-        return NextResponse.json({ success: true });
+
+        const regCodeValue = parseInt(RegCode) || parseInt(RegNo);
+        const fiscalYear = getNepaliFiscalYear();
+        const generateUnkID = () => Date.now() * 1000 + Math.floor(Math.random() * 1000);
+
+        const pool = await getDefaultPool();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        const maxRes = await pool.request()
+            .query(`SELECT ISNULL(MAX(UnkID), 0) + 1 AS NextID FROM GPHmd_LIVE.dbo.hsp_DoctorsNotePTWise`);
+        const newUnkID = maxRes.recordset[0].NextID;
+
+        try {
+            await QueryDefault(
+                `INSERT INTO GPHmd_LIVE.dbo.hsp_DoctorsNotePTWise
+                    (UnkID, FiscalYear, PatientCode, RegCode, PresentComplaints, PreviousHistory, TreatmentPlan)
+                VALUES (@UnkID, @FiscalYear, @PatientCode, @RegCode, @PresentComplaints, @PreviousHistory, @TreatmentPlan)`,
+                [
+                    { name: 'UnkID',            type: sql.BigInt(),          value: newUnkID },  
+                    { name: 'FiscalYear',        type: sql.NVarChar(50),    value: fiscalYear },
+                    { name: 'PatientCode',       type: sql.NVarChar(50),    value: PatientCode },
+                    { name: 'RegCode',           type: sql.Int(),             value: regCodeValue },     
+                    { name: 'PresentComplaints', type: sql.NVarChar(sql.MAX), value: presentComplaints },
+                    { name: 'PreviousHistory',   type: sql.NVarChar(sql.MAX), value: previousHistory },
+                    { name: 'TreatmentPlan',     type: sql.NVarChar(sql.MAX), value: treatmentPlan },
+                ],
+                transaction
+            );
+
+            if (payload && payload.length > 0) {
+                for (const row of payload) {
+                    await QueryDefault(
+                        `INSERT INTO GPHmd_LIVE.dbo.hsp_EarDiagnosisRecord
+                            (FiscalYear, RegCode, PatientCode, TypeId, InvestigationId, Value)
+                        VALUES (@FiscalYear, @RegCode, @PatientCode, @TypeId, @InvestigationId, @Value)`,
+                        [
+                            { name: 'FiscalYear',       type: sql.NVarChar(50),    value: fiscalYear },
+                            { name: 'RegCode',          type: sql.Int(),             value: regCodeValue },  
+                            { name: 'PatientCode',      type: sql.NVarChar(50),    value: PatientCode },
+                            { name: 'TypeId',           type: sql.Int(),             value: row.TypeId },    
+                            { name: 'InvestigationId',  type: sql.Int(),             value: row.InvestigationId },
+                            { name: 'Value',            type: sql.NVarChar(sql.MAX), value: row.Value },
+                        ],
+                        transaction
+                    );
+                }
+            }
+
+            await transaction.commit();
+            return NextResponse.json({ success: true, message: "Data saved successfully" });
+
+        } catch (err: any) {
+            await transaction.rollback();
+            console.error(err);
+            throw err;
+        }
+
     } catch (error: any) {
         console.error("API POST failed:", error);
         return NextResponse.json({ success: false, message: error.message || error }, { status: 500 });

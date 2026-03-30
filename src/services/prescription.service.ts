@@ -57,14 +57,15 @@ export async function getPrescriptionHistory(request: ApiRequest<PrescriptionHis
             itemtype,
             DoctorName,
             Amount
-        FROM dbo.Prescription_Master
-        WHERE PatientCode = @PatientCode
-        ORDER BY c_datetime DESC;
+          FROM GPHmd_LIVE.dbo.Prescription_Master
+          WHERE PatientCode = @PatientCode
+          ORDER BY c_datetime DESC;
         `;
 
-    const dbparams: DbParameter[] = [{ name: 'PatientCode', type: sql.NVarChar(50), value: request.data?.PatientCode }];
+      const dbparams: DbParameter[] = [{ name: 'PatientCode', type: sql.NVarChar(50), value: request.data?.PatientCode }];
     
       const result = await Con_QueryAsync<PrescriptionHistoryResponse>(dbResponseItem.dbLink, query, dbparams);
+  
       return {
         success: true,
         message: 'Success',
@@ -142,7 +143,7 @@ export async function createOrUpdatePrescription(tokenNo: string, body: any) {
         { name: "DoctorName",       type: sql.NVarChar(120), value: body.DoctorName },
       ];
 
-      const result = await Con_ExecuteAsync(dbLink, "Usp_CreateNewPrescription", params);
+      const result = await Con_ExecuteAsync(dbLink, "GPHmd_LIVE.dbo.Usp_CreateNewPrescription", params);
       return { success: true, data: result};
   } catch(e: any){
     console.log(e)

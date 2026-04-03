@@ -11,6 +11,9 @@ import { useProgressNote } from "../queries/progress-note.queries";
 import { ProgressNote } from "@/services/progress-note.service";
 import { ProgressNoteResponse } from "@/types/progress-note.types";
 
+import { useMutation } from "@tanstack/react-query";
+import { toast, ToastContainer } from "react-toastify";
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric",
@@ -101,8 +104,16 @@ interface props { PatientCode: string }
 
 const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
   const { authToken } = useAuthToken();
-  const mrno = '01204502'
-  const { data: ProgressNoteData } = useProgressNote(authToken, mrno) as {
+
+  const [patientInfo, setPatientInfo] = useState(() => {
+    const stored = sessionStorage.getItem('selectedPatient');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const patientId = patientInfo?.MRNO || patientInfo?.PatientCode || patientInfo?.Mrno;
+
+  const mrno = '01204502';
+  const { data: ProgressNoteData } = useProgressNote(authToken, PatientCode) as {
     data: ProgressNoteResponse[] | undefined;
   };
 
@@ -113,30 +124,46 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
   const [successMsg,  setSuccessMsg]  = useState(false);
   const [submitting,  setSubmitting]  = useState(false);
 
-  async function handleSave() {
-    if (!discipline || !noteText.trim()) return;
-    setSubmitting(true);
-    try {
-      const response = await fetch(`/api/inpatients/progress-note/${PatientCode}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
-        body: JSON.stringify({
-          MRNO: PatientCode, WARDCODE: "", BEDCODE: "",
-          DATE: date, TIME: "", DISCIPLINE: discipline,
-          PATIENTPROGRESSNOTE: noteText, COMMENTS: "",
-          C_USER: 1, C_DATE: null, CENTERCODE: "", DEPTCODE: "", IPDCODE: "",
-        }),
-        cache: "no-cache",
-      });
-      if (!response.ok) throw new Error("Failed to save");
-      setDiscipline(""); setNoteText(""); setDate(today);
-      setSuccessMsg(true);
-      setTimeout(() => setSuccessMsg(false), 3000);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSubmitting(false);
+  const saveNotes = async () => {
+    const response = await fetch(`/api/inpatients/progress-note/${PatientCode}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({
+        MRNO: patientId,
+        WARDCODE: "", BEDCODE: "",
+        DATE: date, TIME: "",
+        DISCIPLINE: discipline,
+        PATIENTPROGRESSNOTE: noteText,
+        COMMENTS: "",
+        C_USER: 1,
+        CENTERCODE: 1,
+        DEPTCODE: patientInfo?.DEPTCODE ?? null,  
+        IPDCODE: patientInfo?.IPDCODE?.toString() ?? "",
+      }),
+      cache: "no-cache",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "Failed to save");
+    setDiscipline(""); setNoteText(""); setDate(today);
+    return result;
+  }  
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: saveNotes,
+    onSuccess: () => {
+      toast.success("Notes saved successfully.");
+    },
+    onError: (err: any) => {
+      toast.error("Failed to save notes. Please try again.");
     }
+  })
+
+  const handleSave = () => { 
+    if (!discipline || !noteText.trim()) {
+      toast.error("Please fill in discipline and note.");
+      return;
+    }
+    mutate(); 
   }
 
   const labelClass = "block text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5";
@@ -151,7 +178,9 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
   `;
 
   return (
-    <div className="flex flex-col xl:flex-row gap-5">
+    <>
+      <ToastContainer autoClose={3000} />
+      <div className="flex flex-col xl:flex-row gap-5">
 
       {/* ══════════════════════════════
           LEFT — Form panel
@@ -216,7 +245,7 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
             {/* Save */}
             <button
               onClick={handleSave}
-              disabled={!discipline || !noteText.trim() || submitting}
+              disabled={isPending}
               className="
                 w-full py-2.5 rounded-xl text-xs font-semibold
                 inline-flex items-center justify-center gap-1.5
@@ -228,7 +257,7 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
               "
             >
               <Plus className="w-3.5 h-3.5" />
-              {submitting ? "Saving…" : "Save Note"}
+              { isPending ? "Saving..." : "Save note" }
             </button>
           </div>
         </div>
@@ -273,7 +302,7 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
             ) : (
               <div className="grid sm:grid-cols-2 gap-3">
                 {ProgressNoteData.map((nt: ProgressNoteResponse) => (
-                  <NoteCard key={nt.unkid} note={nt} />
+                  <NoteCard key={`${nt.unkid}-${nt.date}-${nt.DISCIPLINE}`} note={nt} />
                 ))}
               </div>
             )}
@@ -282,6 +311,7 @@ const ProgressNotePage: React.FC<props> = ({ PatientCode }) => {
       </section>
 
     </div>
+  </>
   );
 };
 

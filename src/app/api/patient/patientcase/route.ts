@@ -2,13 +2,19 @@
 'use server';
 
 import { NextRequest, NextResponse } from "next/server";
-import { DbParameter, QueryDefault } from "@/lib/db";
+import { DbParameter, getDefaultPool, QueryDefault } from "@/lib/db";
 import sql from "mssql";
 import { PatientCaseFormData } from "@/types/patient.type";
 
 export async function POST(req: NextRequest) {
   try {
     const data: PatientCaseFormData = await req.json();
+
+    const pool = await getDefaultPool();
+    const masRes = await pool.request()
+      .query(`SELECT ISNULL(MAX(UnkID), 0) + 1 as UNKID FROM GPHmd_LIVE.dbo.HSP_LeprosyPatientRecord;`);
+    
+    const UNKID = masRes.recordset[0].UNKID;
 
     // Filter out undefined or null fields
     const keys = Object.keys(data).filter(k => data[k as keyof PatientCaseFormData] != null);
@@ -35,12 +41,16 @@ export async function POST(req: NextRequest) {
         default: type = sql.NVarChar(1500);
       }
 
-      return { name: k, type, value: data[k as keyof PatientCaseFormData] };
+      return { 
+          name: k, 
+          type, 
+          value: k === 'UnkID' ? UNKID :  data[k as keyof PatientCaseFormData] 
+        };
     });
 
     // Build INSERT statement dynamically
     const query = `
-      INSERT INTO dbo.HSP_LeprosyPatientRecord (${keys.join(",")})
+      INSERT INTO GPHmd_LIVE.dbo.HSP_LeprosyPatientRecord (${keys.join(",")})
       VALUES (${keys.map(k => "@" + k).join(",")})
     `;
 

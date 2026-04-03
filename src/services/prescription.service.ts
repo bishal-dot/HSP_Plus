@@ -185,7 +185,7 @@ export async function getMedicineListFromDb(request: ApiRequest<MedicineListRequ
 
       const medicineResponse = await Con_GetAsync<MedicineListResponse>(
         dbResponseItem.dbLink,
-        'GetMedicineList',
+        'GPHmd_LIVE.dbo.GetMedicineList',
         dbParams
       );
       return{

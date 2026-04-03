@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import sql from "mssql";
-import { DbParameter, QueryDefault } from "@/lib/db";
+import { DbParameter, getDefaultPool, QueryDefault } from "@/lib/db";
 import { Query } from "@tanstack/react-query";
 import { getProgressNoteByMRNO } from "@/controllers/progress-note.controller";
 
@@ -27,14 +27,19 @@ export async function POST(request: NextRequest,
 ) {
     try{
         const body = await request.json();
-        const { UNKID, MRNO, WARDCODE, BEDCODE, DATE, TIME, DISCIPLINE, PATIENTPROGRESSNOTE, COMMENTS, C_USER, C_DATE, CENTERCODE, DEPTCODE, IPDCODE } = body;
+        const { MRNO, WARDCODE, BEDCODE, DATE, TIME, DISCIPLINE, PATIENTPROGRESSNOTE, COMMENTS, C_USER, C_DATE, CENTERCODE, DEPTCODE, IPDCODE } = body;
         
-    const query = `
-    INSERT INTO DOCTOR_PATIENTPROGRESSNOTE
-        (UNKID, MRNO, WARDCODE, BEDCODE, DATE, TIME, DISCIPLINE, PATIENTPROGRESSNOTE, COMMENTS, C_USER, C_DATE, CENTERCODE, DEPTCODE, IPDCODE)
-    VALUES
-        (@UNKID, @MRNO, @WARDCODE, @BEDCODE, @DATE, @TIME, @DISCIPLINE, @PATIENTPROGRESSNOTE, @COMMENTS, @C_USER, GETDATE(), @CENTERCODE, @DEPTCODE, @IPDCODE)
-    `;
+        const pool = await getDefaultPool();
+        const maxRes = await pool.request()
+            .query(`SELECT ISNULL(MAX(UNKID), 0) + 1 as UNKID FROM GPHmd_LIVE.dbo.DOCTOR_PATIENTPROGRESSNOTE`);
+        const UNKID = maxRes.recordset[0].UNKID;
+
+        const query = `
+        INSERT INTO GPHmd_LIVE.dbo.DOCTOR_PATIENTPROGRESSNOTE
+            (UNKID,MRNO, WARDCODE, BEDCODE, DATE, TIME, DISCIPLINE, PATIENTPROGRESSNOTE, COMMENTS, C_USER, C_DATE, CENTERCODE, DEPTCODE, IPDCODE)
+        VALUES
+            (@UNKID, @MRNO, @WARDCODE, @BEDCODE, @DATE, @TIME, @DISCIPLINE, @PATIENTPROGRESSNOTE, @COMMENTS, @C_USER, GETDATE(), @CENTERCODE, @DEPTCODE, @IPDCODE)
+        `;
         const params: DbParameter[] = [
             {name: 'UNKID', value: UNKID, type: sql.BigInt()},
             {name: 'MRNO', value: MRNO, type: sql.NVarChar(50)},

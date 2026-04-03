@@ -131,6 +131,8 @@ const OPDDashboard: React.FC = () => {
 
   const patients = opdPatientDayWise?.data ?? [];
 
+  console.log("Patients", patients);
+
   // Client-side search filter
   const filteredPatients = patients.filter((p: any) => {
     if (!searchQuery.trim()) return true;
@@ -207,7 +209,7 @@ const OPDDashboard: React.FC = () => {
 
               <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
                 {/* Date filter dropdown */}
-                <div className="relative" ref={dateRef}>
+                {/* <div className="relative" ref={dateRef}>
                   <button
                     onClick={() => setDateOpen(!dateOpen)}
                     className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition"
@@ -257,7 +259,7 @@ const OPDDashboard: React.FC = () => {
                       )}
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 {/* Show All Patients */}
                 <button

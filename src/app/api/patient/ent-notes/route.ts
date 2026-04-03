@@ -7,14 +7,17 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { patientInfo, presentComplaints, previousHistory, treatmentPlan, payload } = body;
-        const { PatientCode, RegCode, RegNo, AdmitDate, Date: PatientDate } = patientInfo || {};
+        const { PatientCode, MRNo, RegCode, RegNo, AdmitDate, Date: PatientDate } = patientInfo || {};
 
-        if (!PatientCode) {
+        if (!PatientCode && !MRNo) {
             return NextResponse.json({ success: false, message: "PatientCode is required" }, { status: 400 });
         }
 
+        console.log("PatientCode from route", PatientCode || MRNo)
+        
         const regCodeValue = parseInt(RegCode) || parseInt(RegNo);
         const fiscalYear = getNepaliFiscalYear();
+        const patientId = parseInt(PatientCode) || parseInt(MRNo);
         const generateUnkID = () => Date.now() * 1000 + Math.floor(Math.random() * 1000);
 
         const pool = await getDefaultPool();
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
                 [
                     { name: 'UnkID',            type: sql.BigInt(),          value: newUnkID },  
                     { name: 'FiscalYear',        type: sql.NVarChar(50),    value: fiscalYear },
-                    { name: 'PatientCode',       type: sql.NVarChar(50),    value: PatientCode },
+                    { name: 'PatientCode',       type: sql.NVarChar(50),    value: PatientCode || MRNo },
                     { name: 'RegCode',           type: sql.Int(),             value: regCodeValue },     
                     { name: 'PresentComplaints', type: sql.NVarChar(sql.MAX), value: presentComplaints },
                     { name: 'PreviousHistory',   type: sql.NVarChar(sql.MAX), value: previousHistory },
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
                         [
                             { name: 'FiscalYear',       type: sql.NVarChar(50),    value: fiscalYear },
                             { name: 'RegCode',          type: sql.Int(),             value: regCodeValue },  
-                            { name: 'PatientCode',      type: sql.NVarChar(50),    value: PatientCode },
+                            { name: 'PatientCode',      type: sql.NVarChar(50),    value: PatientCode || MRNo },
                             { name: 'TypeId',           type: sql.Int(),             value: row.TypeId },    
                             { name: 'InvestigationId',  type: sql.Int(),             value: row.InvestigationId },
                             { name: 'Value',            type: sql.NVarChar(sql.MAX), value: row.Value },

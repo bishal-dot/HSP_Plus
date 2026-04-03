@@ -79,7 +79,7 @@ export async function getProgressNoteByMRNOFromDb(request: ApiRequest<ProgressNo
 
     const progressNote = await Con_GetAsync<ProgressNoteResponse>(
         dbResponseItem.dbLink,
-        'Get_Hsp_ProgressNote',
+        'GPHmd_LIVE.dbo.Get_Hsp_ProgressNote',
         dbParams
     );
 

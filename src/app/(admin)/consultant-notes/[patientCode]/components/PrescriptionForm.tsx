@@ -63,7 +63,9 @@ const PrescriptionForm: React.FC<PrescriptionFormRequest> = ({
 
   const { data: prescriptionHistory, isLoading: isHistoryLoading, refetch } = usePrescriptionHistory(authToken, patientId);
   const { data: masters,            isLoading: isMasterLoading }            = usePrescriptionMaster(authToken);
-  const { data: drugs }                                                      = useMedicineList(authToken, patientCode);
+  const { data: drugs }                                                      = useMedicineList(authToken, patientId);
+
+  console.log("drugs", drugs);
 
   const masterRoutes       = masters?.routes       ?? [];
   const masterFrequencies  = masters?.frequency    ?? [];

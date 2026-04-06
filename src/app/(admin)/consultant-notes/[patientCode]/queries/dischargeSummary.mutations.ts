@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 interface InsertDischargePayload {
   authToken: string;
   MrNO: string;
   IPDCode: string;
+  userId: number;
   DischargeType: string;
   PreOPDiagnosis?: string;
   Diagnosis: string;
@@ -40,12 +42,16 @@ interface InsertDischargePayload {
   AODNursingNote?: string;
   RX?: string;
   ADVICE?: string;
+  C_DATE?: string;
+  c_user?: string;
+  m_DATE?: string;
+  m_user?: string;
 }
 
 const insertDischargeSummary = async (payload: InsertDischargePayload) => {
   const { authToken, ...body } = payload;
 
-  const response = await fetch("/api/ipd/discharge-summary", {
+  const response = await fetch("/api/inpatients/dischargeSummary", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +64,6 @@ const insertDischargeSummary = async (payload: InsertDischargePayload) => {
     const error = await response.json().catch(() => ({}));
     throw new Error(error?.message ?? "Failed to insert discharge record");
   }
-
   return response.json();
 };
 

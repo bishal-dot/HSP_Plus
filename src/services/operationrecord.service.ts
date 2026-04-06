@@ -36,7 +36,7 @@ export async function fetchOperationRecordFromDb(request: ApiRequest<OperationRe
 
         const operationRecordResponse = await Con_GetAsync<OperationRecordTypeRequest[]>(
             dbResponseItem.dbLink,
-            'GPHmd_LIVE.dbo.IPD_GetOperationRecordBYMRNO',
+            'GPHmd_Live.dbo.IPD_GetOperationRecordBYMRNO',
             dbParams
         );
         return{

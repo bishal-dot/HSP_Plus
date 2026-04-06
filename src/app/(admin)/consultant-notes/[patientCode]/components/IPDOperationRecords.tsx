@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthToken } from "@/context/AuthContext";
 import { useOperationRecord } from "../queries/operaationrecord.queries";
 import { useInsertOperationRecord } from "../queries/operationrecord.mutations";
@@ -11,6 +11,13 @@ import {
   Clock, Droplets, FlaskConical, Microscope, Wrench, Layers,
   NotebookPen, Activity, Hash,
 } from "lucide-react";
+import Chip from "@/components/form/input/Chip";
+import Section from "@/components/form/input/Section";
+import SubField from "@/components/form/input/SubField";
+import Field from "@/components/form/input/Field";
+import Accordion from "@/components/form/input/Accordion";
+import TabBtn from "@/components/form/input/TabBtn";
+import DatePicker from "react-datepicker";
 
 /* ═══════════════════════════════════════════════════
    TYPES
@@ -21,7 +28,6 @@ interface Props {
 }
 
 interface OperationFormData {
-  IPDCode: string;
   Otdate: string;
   Starttime: string;
   EndTime: string;
@@ -50,17 +56,18 @@ interface OperationFormData {
   IMPLANT: string;
   /* Admin */
   REMARKS: string;
+  memberRole: string;
 }
 
 const EMPTY_FORM: OperationFormData = {
-  IPDCode: "", Otdate: "", Starttime: "", EndTime: "",
+  Otdate: "", Starttime: "", EndTime: "",
   SkinIncisionTime: "", SkinClosureTime: "",
   PreOPDiagnosis: "", PostOpDiagnosis: "", Diagnosis: "",
   Op_Preposed: "", Op_Executed: "", Surgery: "", SurgeryGroup: "",
   OTProcedure: "", anesthesiaGroup: "",
   BloodLoss: "", Counts: "", IIUsage: "", Closure: "",
   CultureSensitivity: "", BIOPSY: "", Histopathology: "", IMPLANT: "",
-  REMARKS: "",
+  REMARKS: "", memberRole: "",
 };
 
 /* ═══════════════════════════════════════════════════
@@ -126,9 +133,9 @@ const IPDOperationRecords: React.FC<{ PatientCode: string }> = ({ PatientCode })
 
   return (
     <div className="space-y-4">
-      {operationRecords.map((op: any) => (
+      {operationRecords.map((op: any, index) => (
         <div
-          key={op.OperationId}
+          key={`${op.OperationId}-${index}`}
           className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm dark:shadow-none overflow-hidden"
         >
           <div className="h-0.5 w-full bg-gradient-to-r from-rose-500 via-pink-400 to-rose-400" />
@@ -253,7 +260,16 @@ const IPDOperationRecords: React.FC<{ PatientCode: string }> = ({ PatientCode })
    INSERT FORM
 ═══════════════════════════════════════════════════ */
 const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ MrNO, onSuccess }) => {
-  const { authToken } = useAuthToken();
+  const { authToken, username, consultantCode } = useAuthToken();
+  const [patientInfo, setPatientInfo] = useState<any>(null);
+    useEffect(() => {
+        const stored = sessionStorage.getItem("selectedPatient");
+        if (stored) setPatientInfo(JSON.parse(stored));
+      }, []);
+    
+  const patientNo = patientInfo?.IPDCODE;
+  const patientCode = patientInfo?.MrNO || patientInfo?.PatientCode || patientInfo?.MRNo;
+
   const { mutateAsync: insertOperation, isPending, isError } = useInsertOperationRecord();
 
   const [form, setForm] = useState<OperationFormData>(EMPTY_FORM);
@@ -267,6 +283,31 @@ const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ M
     remarks: false,
   });
 
+  const [surgeryGroups, setSurgeryGroups] = useState<{ ServiceCode: string; ServiceName: string }[]>([]);
+  const [anesthesiaGroups, setAnesthesiaGroups] = useState<{ ServiceCode: string; ServiceName: string }[]>([]);
+  const [otGroups, setOtGroups] = useState<{ Unkid: string; Alias: string }[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/masters/services?type=101`)
+      .then((res) => res.json())
+      .then(setSurgeryGroups)
+      .catch(console.error);                              // was: unhandled rejection
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/masters/services?type=102`)
+      .then((res) => res.json())
+      .then(setAnesthesiaGroups)
+      .catch(console.error);
+  }, []); 
+  
+  useEffect(() => {
+    fetch(`/api/masters/otgroups`)
+      .then((res) => res.json())
+      .then(setOtGroups)
+      .catch(console.error);
+  }, [])
+
   const set = (field: keyof OperationFormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -274,14 +315,22 @@ const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ M
   const toggle = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  // format time
+  const formatTime = (time?: string): string | undefined => {
+    if (!time || !time.trim()) return undefined;          // was: only checking .length === 5
+    const parts = time.trim().split(":");
+    if (parts.length < 2) return undefined;
+    return parts.length === 2 ? `${time}:00` : time;
+  };
+
   const handleSubmit = async () => {
     try {
-      await insertOperation({ authToken, MrNO, ...form });
+      await insertOperation({  ...form, authToken, MrNO: patientCode, IPDCode: patientNo,  memberRole: form.memberRole ? Number(form.memberRole) : undefined, consultantcode: consultantCode, consultantname: username ?? undefined, Starttime: formatTime(form.Starttime), EndTime: formatTime(form.EndTime) });
       onSuccess();
     } catch (_) {}
   };
 
-  const isValid = form.IPDCode && form.Otdate && form.Op_Executed;
+  const isValid = form.Otdate && form.Op_Executed;
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm dark:shadow-none overflow-hidden">
@@ -301,10 +350,10 @@ const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ M
       <div className="p-5 space-y-3">
 
         {/* ── 1. BASIC INFO ── */}
-        <Accordion icon={<Hash className="w-4 h-4" />} title="Basic Information" color="slate" open={openSections.basic} onToggle={() => toggle("basic")}>
+        <Accordion icon={<Hash className="w-4 h-4" />} title="Basic Information" color="emerald" open={openSections.basic} onToggle={() => toggle("basic")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="IPD Code" required>
-              <input type="text" placeholder="e.g. IPD-2024-001" value={form.IPDCode} onChange={set("IPDCode")} className={inputCls} />
+              <input type="text" placeholder="IPD Code" value={patientNo} readOnly className={inputCls} />
             </Field>
             <Field label="OT Date" required>
               <input type="date" value={form.Otdate} onChange={set("Otdate")} className={inputCls} />
@@ -349,13 +398,37 @@ const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ M
             <Field label="Surgery">
               <input type="text" placeholder="Surgery name…" value={form.Surgery} onChange={set("Surgery")} className={inputCls} />
             </Field>
-            <Field label="Surgery Group">
-              <input type="text" placeholder="e.g. General Surgery" value={form.SurgeryGroup} onChange={set("SurgeryGroup")} className={inputCls} />
+            <Field label="Member Role" required>
+              <select value={form.memberRole} onChange={set("memberRole")} className={inputCls}>
+                <option value="">Select Role</option>
+                {otGroups.map(g => (
+                  <option key={g.Unkid} value={g.Unkid}>
+                    {g.Alias}
+                  </option>
+                ))}
+              </select>
             </Field>
-          </div>
-          <Field label="Anaesthesia Group">
-            <input type="text" placeholder="e.g. GA, Spinal, Epidural, LA…" value={form.anesthesiaGroup} onChange={set("anesthesiaGroup")} className={inputCls} />
+            <Field label="Surgery Group">
+              <select value={form.SurgeryGroup} onChange={set("SurgeryGroup")} className={inputCls}>
+                <option value="">Select Surgery Group</option>
+                {surgeryGroups.map(s => (
+                  <option key={s.ServiceCode} value={s.ServiceCode}>
+                    {s.ServiceName}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Anaesthesia Group">
+            <select value={form.anesthesiaGroup} onChange={set("anesthesiaGroup")} className={inputCls}>
+              <option value="">Select Anaesthesia Group</option>
+              {anesthesiaGroups.map(a => (
+                <option key={a.ServiceCode} value={a.ServiceCode}>
+                  {a.ServiceName}
+                </option>
+              ))}
+            </select>
           </Field>
+          </div>
         </Accordion>
 
         {/* ── 4. OT PROCEDURE ── */}
@@ -402,7 +475,7 @@ const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ M
         </Accordion>
 
         {/* ── 7. REMARKS ── */}
-        <Accordion icon={<BadgeInfo className="w-4 h-4" />} title="Remarks" color="slate" open={openSections.remarks} onToggle={() => toggle("remarks")}>
+        <Accordion icon={<BadgeInfo className="w-4 h-4" />} title="Remarks" color="violet" open={openSections.remarks} onToggle={() => toggle("remarks")}>
           <Field label="Remarks">
             <textarea rows={3} placeholder="Any additional remarks…" value={form.REMARKS} onChange={set("REMARKS")} className={textareaCls} />
           </Field>
@@ -440,122 +513,6 @@ const IPDOperationForm: React.FC<{ MrNO: string; onSuccess: () => void }> = ({ M
     </div>
   );
 };
-
-/* ═══════════════════════════════════════════════════
-   SHARED UI PRIMITIVES
-═══════════════════════════════════════════════════ */
-
-function TabBtn({ active, onClick, icon, label }: {
-  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150
-        ${active
-          ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200 dark:border-slate-600"
-          : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}
-      `}
-    >
-      {icon}{label}
-    </button>
-  );
-}
-
-const accordionColorMap: Record<string, { label: string; icon: string; border: string; header: string }> = {
-  slate:   { label: "text-slate-600 dark:text-slate-400",   icon: "text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60",     border: "border-slate-200 dark:border-slate-700/60",  header: "bg-slate-50/80 dark:bg-slate-800/60"  },
-  blue:    { label: "text-blue-600 dark:text-blue-400",     icon: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30",           border: "border-blue-100 dark:border-blue-800/30",    header: "bg-blue-50/60 dark:bg-blue-900/10"    },
-  violet:  { label: "text-violet-600 dark:text-violet-400", icon: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 border-violet-100 dark:border-violet-800/30", border: "border-violet-100 dark:border-violet-800/30", header: "bg-violet-50/60 dark:bg-violet-900/10" },
-  rose:    { label: "text-rose-600 dark:text-rose-400",     icon: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800/30",           border: "border-rose-100 dark:border-rose-800/30",    header: "bg-rose-50/60 dark:bg-rose-900/10"    },
-  amber:   { label: "text-amber-600 dark:text-amber-400",   icon: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30",     border: "border-amber-100 dark:border-amber-800/30",  header: "bg-amber-50/60 dark:bg-amber-900/10"  },
-  teal:    { label: "text-teal-600 dark:text-teal-400",     icon: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 border-teal-100 dark:border-teal-800/30",           border: "border-teal-100 dark:border-teal-800/30",    header: "bg-teal-50/60 dark:bg-teal-900/10"    },
-  emerald: { label: "text-emerald-600 dark:text-emerald-400", icon: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/30", border: "border-emerald-100 dark:border-emerald-800/30", header: "bg-emerald-50/60 dark:bg-emerald-900/10" },
-};
-
-function Accordion({ icon, title, color = "slate", open, onToggle, children }: {
-  icon: React.ReactNode; title: string; color?: string;
-  open: boolean; onToggle: () => void; children: React.ReactNode;
-}) {
-  const c = accordionColorMap[color];
-  return (
-    <div className={`rounded-xl border ${c.border} bg-white dark:bg-slate-800/40 overflow-hidden`}>
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 ${c.header} border-b ${open ? c.border : "border-transparent"} transition-colors`}
-      >
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg border ${c.icon}`}>{icon}</span>
-          <span className={`text-xs font-bold uppercase tracking-widest ${c.label}`}>{title}</span>
-        </div>
-        {open
-          ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-          : <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-        }
-      </button>
-      {open && <div className="px-4 py-3 space-y-3">{children}</div>}
-    </div>
-  );
-}
-
-function Field({ label, required, hint, children }: {
-  label: string; required?: boolean; hint?: string; children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-      </label>
-      {children}
-      {hint && <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">{hint}</p>}
-    </div>
-  );
-}
-
-const colorMap: Record<string, { label: string; icon: string; border: string }> = {
-  slate:   { label: "text-slate-600 dark:text-slate-400",   icon: "text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60",       border: "border-slate-200 dark:border-slate-700/60"  },
-  blue:    { label: "text-blue-600 dark:text-blue-400",     icon: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30",             border: "border-blue-100 dark:border-blue-800/30"    },
-  violet:  { label: "text-violet-600 dark:text-violet-400", icon: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 border-violet-100 dark:border-violet-800/30", border: "border-violet-100 dark:border-violet-800/30" },
-  emerald: { label: "text-emerald-600 dark:text-emerald-400", icon: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/30", border: "border-emerald-100 dark:border-emerald-800/30" },
-  amber:   { label: "text-amber-600 dark:text-amber-400",   icon: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30",       border: "border-amber-100 dark:border-amber-800/30"  },
-  rose:    { label: "text-rose-600 dark:text-rose-400",     icon: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800/30",             border: "border-rose-100 dark:border-rose-800/30"    },
-  teal:    { label: "text-teal-600 dark:text-teal-400",     icon: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 border-teal-100 dark:border-teal-800/30",             border: "border-teal-100 dark:border-teal-800/30"    },
-};
-
-function Section({ icon, title, color = "slate", children }: {
-  icon: React.ReactNode; title: string; color?: string; children: React.ReactNode;
-}) {
-  const c = colorMap[color];
-  return (
-    <div className={`rounded-xl border ${c.border} bg-white dark:bg-slate-800/40 overflow-hidden`}>
-      <div className={`flex items-center gap-2 px-4 py-2.5 border-b ${c.border} bg-slate-50/80 dark:bg-slate-800/60`}>
-        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg border ${c.icon}`}>{icon}</span>
-        <span className={`text-xs font-bold uppercase tracking-widest ${c.label}`}>{title}</span>
-      </div>
-      <div className="px-4 py-3">{children}</div>
-    </div>
-  );
-}
-
-function SubField({ label, value }: { label: string; value: any }) {
-  if (!value || String(value).trim() === "") return null;
-  return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">{label}</p>
-      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{value}</p>
-    </div>
-  );
-}
-
-function Chip({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 text-[10px]">
-      <span className="text-slate-400 dark:text-slate-500">{icon}</span>
-      <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
-    </div>
-  );
-}
 
 const inputCls = `
   w-full px-3 py-2 rounded-lg text-xs

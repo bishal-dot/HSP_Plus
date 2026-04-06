@@ -27,12 +27,15 @@ interface InsertOperationPayload {
   Histopathology?: string;
   IMPLANT?: string;
   REMARKS?: string;
+  consultantcode?: number;
+  consultantname?:string;
+  memberRole?:number
 }
 
 const insertOperationRecord = async (payload: InsertOperationPayload) => {
   const { authToken, ...body } = payload;
 
-  const response = await fetch("/api/ipd/operation-record", {
+  const response = await fetch("/api/inpatients/operationrecord", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

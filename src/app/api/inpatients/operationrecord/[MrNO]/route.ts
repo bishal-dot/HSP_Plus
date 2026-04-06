@@ -11,7 +11,6 @@ export async function POST(
         const body = await request.json();
         const mrno = body.mrno;
 
-        console.log("Token No of route", tokenNo, "MRNO of route", mrno);
         const data = await getOperationRecordByMrno(tokenNo, mrno);
         return NextResponse.json(data);
 }

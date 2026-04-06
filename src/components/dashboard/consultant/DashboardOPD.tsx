@@ -123,7 +123,7 @@ const OPDDashboard: React.FC = () => {
   };
 
   const { data: opdPatientDayWise, isLoading, isFetching, refetch } = useOPDPatientsDayWise(authToken, {
-    DTODAY: '2025-12-01',
+    DTODAY: getToday(),
     deptcode: 1,
     consultantcode: consultantCode,
     centerid: 1,

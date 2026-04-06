@@ -12,8 +12,6 @@ export async function POST(request: NextRequest) {
         if (!PatientCode && !MRNo) {
             return NextResponse.json({ success: false, message: "PatientCode is required" }, { status: 400 });
         }
-
-        console.log("PatientCode from route", PatientCode || MRNo)
         
         const regCodeValue = parseInt(RegCode) || parseInt(RegNo);
         const fiscalYear = getNepaliFiscalYear();

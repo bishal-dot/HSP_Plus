@@ -32,7 +32,6 @@ export async function fetchbillMasterFromDb(request:ApiRequest<BillMasterRequest
             {name : 'IPDCode', type: sql.BigInt(), value: request.data?.IPDCode},
             {name: 'IsDateWise', type: sql.Bit(), value: request.data?.IsDateWise ? 1 : 0},
         ];
-        console.log("DbParams:",dbParams);
 
         const billDetailsResponse = await Con_GetAsync<BillMasterResponse>(
             dbResponseItem.dbLink,

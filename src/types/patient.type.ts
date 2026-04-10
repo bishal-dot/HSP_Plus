@@ -38,7 +38,6 @@ export interface opdPatientDayWiseRequest{
     deptcode: number;
     consultantcode: number;
 }
-
 export interface opdPatientDayWiseResponse{
     RegNo: string;
     Tokenid: number;
@@ -62,6 +61,18 @@ export interface opdPatientDayWiseResponse{
     Wardno: string;
     VDC_municipality: string;
     FacultyName: string;
+}
+
+export interface opdPatientCountDayWiseRequest{
+    DTODAY: string;
+    centerid: number;
+    deptcode: number;
+}
+
+export interface opdPatientCountDayWiseResponse{
+    totalpatient: number;
+    pending:number;
+    checked:number;
 }
 
 export interface opdPatientResponse{

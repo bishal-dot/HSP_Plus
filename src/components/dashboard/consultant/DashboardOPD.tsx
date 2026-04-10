@@ -16,7 +16,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useAuthToken } from '@/context/AuthContext';
-import { useOPDPatientsDayWise } from '@/queries/opd.queries';
+import { useOPDPatientsDayWise, useOPDPatientsDayWiseCount } from '@/queries/opd.queries';
 import { useRouter } from 'next/navigation';
 import OPDALLPatients from './OPDALLPatients';
 
@@ -123,7 +123,7 @@ const OPDDashboard: React.FC = () => {
   };
 
   const { data: opdPatientDayWise, isLoading, isFetching, refetch } = useOPDPatientsDayWise(authToken, {
-    DTODAY: getToday(),
+    DTODAY: '2026-01-19',
     deptcode: 1,
     consultantcode: consultantCode,
     centerid: 1,
@@ -131,7 +131,11 @@ const OPDDashboard: React.FC = () => {
 
   const patients = opdPatientDayWise?.data ?? [];
 
-  console.log("Patients", patients);
+  const { data: patientcount = [] } = useOPDPatientsDayWiseCount(authToken, {
+    DTODAY: '2026-01-19',
+    centerid: 1,
+    deptcode: 1,
+  })
 
   // Client-side search filter
   const filteredPatients = patients.filter((p: any) => {
@@ -145,9 +149,10 @@ const OPDDashboard: React.FC = () => {
     );
   });
 
-  const totalPatients = patients.length;
-  const waitingCount = patients.filter((p: any) => !p.CheckIn || p.CheckIn === '').length;
-  const checkedInCount = patients.filter((p: any) => p.CheckIn && p.CheckIn !== '').length;
+  const totalPatients = patientcount[0]?.totalpatient ?? 0;
+  const waitingCount = patientcount[0]?.pending ?? 0;
+  const checkedInCount = patientcount[0]?.checked ?? 0;
+
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';

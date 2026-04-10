@@ -1,6 +1,6 @@
-import { fetchDischargedPatientInfo, fetchInpatientInfo, fetchOPDpatientAll, fetchOPDPatientsDayWise, fetchPatientInfo } from "@/services/patient.service";
+import { fetchDaywiseOpdPatientCount, fetchDischargedPatientInfo, fetchInpatientInfo, fetchOPDpatientAll, fetchOPDPatientsDayWise, fetchPatientInfo } from "@/services/patient.service";
 import { ApiRequest, RequiredApiRequest } from "@/types/api.type";
-import { dischargedPatientsRequest, inPatientRequest, opdPatientDayWiseRequest, opdPatientRequest, patientRequest } from "@/types/patient.type";
+import { dischargedPatientsRequest, inPatientRequest, opdPatientCountDayWiseRequest, opdPatientDayWiseRequest, opdPatientRequest, patientRequest } from "@/types/patient.type";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function getPatientInfo(request: NextRequest){
@@ -60,6 +60,21 @@ export async function getDischargerdPatientInfo(request:NextRequest){
         const body = await request.json();
         const databaseRequest = body as RequiredApiRequest<dischargedPatientsRequest>;
         return NextResponse.json(await fetchDischargedPatientInfo(databaseRequest));
+    } catch {
+        return NextResponse.json({
+            success: false,
+            message: 'Internal Server Error'
+        });
+    }
+}
+
+
+// get opd patient count
+export async function getOPDPatientCountDayWise(request:NextRequest) {
+    try{
+        const body = await request.json();
+        const databaseRequest = body as RequiredApiRequest<opdPatientCountDayWiseRequest>;
+        return NextResponse.json(await fetchDaywiseOpdPatientCount(databaseRequest));
     } catch {
         return NextResponse.json({
             success: false,

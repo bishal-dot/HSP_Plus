@@ -13,3 +13,19 @@ export interface ServiceResponse{
 export interface ServiceRequest{
     patientCategory: number;
 }
+
+export interface ServiceRqByMrnoRequest{
+    mrno: string;
+    centercode: string;
+}
+
+export interface ServiceRqByMrnoResponse{
+    TRANID: number;
+    trancodedaterequestby: string;
+    DeptCode: number;
+    ServiceName: string;
+    Amount: number;
+    requestby: string;
+    Remarks: string;
+    Status: string;
+}

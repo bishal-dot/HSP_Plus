@@ -51,21 +51,41 @@ const OPDALLPatients: React.FC = () => {
   const { authToken } = useAuthToken();
   const router = useRouter();
 
+   const STORAGE_KEY = "opd_filters_state";
+
+  const loadState = () => {
+    try{
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  const saveState = (state: object) => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  const saved = loadState();
   // Filter States
-  const [dateFilter, setDateFilter] = useState("Today");
+  const [dateFilter, setDateFilter] = useState(saved?.dateFilter ?? "Today");
   const [dateOpen, setDateOpen] = useState(false);
-  const [customDate, setCustomDate] = useState({ from: "", to: "" });
+  const [customDate, setCustomDate] = useState(saved?.customDate ?? { from: "", to: "" });
   const dateRef = useRef<HTMLDivElement | null>(null);
 
-  const [selectedFaculty, setSelectedFaculty] = useState("");
+  const [selectedFaculty, setSelectedFaculty] = useState(saved?.selectedFaculty ?? "");
   const [facultyOpen, setFacultyOpen] = useState(false);
   const facultyRef = useRef<HTMLDivElement | null>(null);
 
-  const [searchName, setSearchName] = useState("");
-  const [searchMRNo, setSearchMRNo] = useState("");
+  const [searchName, setSearchName] = useState(saved?.searchName ?? "");
+  const [searchMRNo, setSearchMRNo] = useState(saved?.searchMRNo ?? "");
   const [showFilters, setShowFilters] = useState(false); // collapsed by default
 
   const { data: facultyMaster, isLoading: isFacultyLoading } = useFacultyMaster(authToken);
+
+  const [filters, setFilters] = useState<opdPatientRequest>(
+    saved?.filters ?? {  deptcode: 0,  centerid: 1,  showall: "1",  date: null,  datefrom: null,   dateTo: null,  PATIENTNAME: "",  MRNO: "",
+  });
 
   const Loader = () => (
     <RotatingLines
@@ -76,17 +96,14 @@ const OPDALLPatients: React.FC = () => {
       visible={true}
     />
   );
-
-  const [filters, setFilters] = useState<opdPatientRequest>({
-    deptcode: 0,
-    centerid: 1,
-    showall: "1",
-    date: null,
-    datefrom: null,
-    dateTo: null,
-    PATIENTNAME: "",
-    MRNO: "",
-  });
+ 
+  useEffect(() => {
+    const referer = sessionStorage.getItem("opd_referer");
+    if(referer !== "consultant-notes") {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+    sessionStorage.removeItem("opd_referer");
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -153,7 +170,7 @@ const OPDALLPatients: React.FC = () => {
 
   const handleSearch = () => {
     if (!authToken) return;
-    setFilters({
+    const newFIlters = {
       deptcode: selectedFaculty ? parseInt(selectedFaculty) : 0,
       centerid: 1,
       showall: selectedFaculty ? "1" : "0",
@@ -162,11 +179,15 @@ const OPDALLPatients: React.FC = () => {
       dateTo: toDate || null,
       PATIENTNAME: searchName,
       MRNO: searchMRNo,
-    });
+    };
+    setFilters(newFIlters);
     setShowFilters(false);
+
+    saveState({ dateFilter, customDate, selectedFaculty, searchName, searchMRNo, filters: newFIlters });
   };
 
   const handleClearFilters = () => {
+    sessionStorage.removeItem(STORAGE_KEY);
     setSearchName("");
     setSearchMRNo("");
     setDateFilter("Today");
@@ -185,6 +206,7 @@ const OPDALLPatients: React.FC = () => {
   };
 
   const openConsultantNotes = (Patient: any) => {
+    sessionStorage.setItem("opd_referer", "consultant-notes");
     sessionStorage.setItem("selectedPatient", JSON.stringify(Patient));
     router.push(`/consultant-notes/${Patient.PatientCode}`);
   };
@@ -479,7 +501,7 @@ const OPDALLPatients: React.FC = () => {
                   <DatePicker
                     selected={customDate.from ? new Date(customDate.from) : null}
                     onChange={(date: any) =>
-                      setCustomDate((prev) => ({
+                      setCustomDate((prev: any) => ({
                         ...prev,
                         from: date ? date.toISOString().split("T")[0] : "",
                       }))
@@ -496,7 +518,7 @@ const OPDALLPatients: React.FC = () => {
                   <DatePicker
                     selected={customDate.to ? new Date(customDate.to) : null}
                     onChange={(date: any) =>
-                      setCustomDate((prev) => ({
+                      setCustomDate((prev: any) => ({
                         ...prev,
                         to: date ? date.toISOString().split("T")[0] : "",
                       }))

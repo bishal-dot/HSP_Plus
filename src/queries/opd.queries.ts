@@ -1,7 +1,7 @@
 import { fetchOPDpatientFilter, fetchOPDPatients } from "@/app/api/patient/info/api";
 import { fetchOPDpatientDayWise } from "@/app/api/patient/opd/api";
-import { fetchOPDpatientAll } from "@/services/patient.service";
-import { opdPatientDayWiseRequest, opdPatientRequest } from "@/types/patient.type";
+import { fetchDaywiseOpdPatientCount, fetchOPDpatientAll } from "@/services/patient.service";
+import { opdPatientCountDayWiseRequest, opdPatientDayWiseRequest, opdPatientRequest } from "@/types/patient.type";
 import { useQuery } from "@tanstack/react-query";
 
 export const opdKeys = {
@@ -40,6 +40,28 @@ export const useOPDPatientsDayWise = (
     enabled: options?.enabled !== undefined ? options.enabled : !!token,
     queryKey: opdDayWiseKeys.list(params),
     queryFn: () => fetchOPDpatientDayWise(token!, params),
+    // keepPreviousData: true,
+    staleTime: 1000 * 30,
+});
+
+
+export const opdDayWiseCountKeys = {
+    all: ['opdDayWiseCount'] as const,
+    list: (params: unknown) => [...opdDayWiseCountKeys.all, 'list', params] as const,
+};
+
+export const useOPDPatientsDayWiseCount = (
+    token: string | null,
+    params: opdPatientCountDayWiseRequest,
+    options?: { enabled?: boolean }
+) => useQuery({
+    enabled: options?.enabled !== undefined ? options.enabled : !!token,
+    queryKey: opdDayWiseCountKeys.list(params),
+    queryFn: () => fetchDaywiseOpdPatientCount({
+        tokenNo: token!,
+        data: params
+    }),
+    select: (res) => res.data ?? [],
     // keepPreviousData: true,
     staleTime: 1000 * 30,
 });

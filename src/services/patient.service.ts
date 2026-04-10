@@ -2,7 +2,7 @@
 import { Con_GetAsync, DbParameter, GetAsync, QueryDefault } from '@/lib/db';
 import { ApiRequest, ApiResponse, RequiredApiRequest } from '@/types/api.type';
 import { masterDbResponseWithToken } from '@/types/masterDb.type';
-import { dischargedPatientResponse, dischargedPatientsRequest, inPatientRequest, inPatientResponse, opdPatientDayWiseRequest, opdPatientDayWiseResponse, opdPatientRequest, opdPatientResponse, PatientMasterResponse, patientRequest, patientResponse } from '@/types/patient.type';
+import { dischargedPatientResponse, dischargedPatientsRequest, inPatientRequest, inPatientResponse, opdPatientCountDayWiseRequest, opdPatientCountDayWiseResponse, opdPatientDayWiseRequest, opdPatientDayWiseResponse, opdPatientRequest, opdPatientResponse, PatientMasterResponse, patientRequest, patientResponse } from '@/types/patient.type';
 import sql from 'mssql';
 import { NextRequest } from 'next/server';
 
@@ -224,6 +224,62 @@ export async function fetchOPDPatientsDayWise(request: RequiredApiRequest<opdPat
         
 }
 
+// count daywise total patients, waiting patients, and admitted patients
+export async function fetchDaywiseOpdPatientCount(request: RequiredApiRequest<opdPatientCountDayWiseRequest>): Promise<ApiResponse<opdPatientCountDayWiseResponse[]>> {
+    try{
+        const params: DbParameter[] = [
+            { name: 'TokenNo', type: sql.NVarChar(150), value: request.tokenNo },
+        ];
+            
+        const dbResponse = await GetAsync<masterDbResponseWithToken>(
+            'usp_Pos_S_LogininfoByTokenNo',
+            params
+        );
+        if (dbResponse.length === 0) {
+            return {
+                success: false,
+                message: 'Invalid request'
+            };
+        }
+        
+        const dbResponseItem = dbResponse[0];
+        // if (!(dbResponseItem.dbLink !== "" && request.tokenNo !== "")) {
+        //     return {
+        //         success: false,
+        //         message: 'Invalid request'
+        //     };
+        // }
+        if (!dbResponseItem.dbLink || !request.tokenNo) {
+            return {
+                success: false,
+                message: 'Invalid database connection'
+            };
+        }
+        const dbParams: DbParameter[] = [
+            { name: 'DTODAY', type: sql.SmallDateTime(), value: request.data.DTODAY || new Date().toISOString().split('T')[0] },
+            { name: 'centerid', type: sql.Int(), value: 1 },
+            { name: 'deptcode', type: sql.Int(), value: request.data.deptcode },
+        ];
+
+        const patientDbResponse = await Con_GetAsync<opdPatientCountDayWiseResponse>(
+            dbResponseItem.dbLink,
+            'USP_OPDPT_CountDAYWISE',
+            dbParams
+        );
+        return {
+            success: true,
+            message: patientDbResponse.length
+                ? 'Data retrieved successfully'
+                : 'No patients found',
+            data: patientDbResponse
+        };        
+    } catch {
+        return {
+            success: false,
+            message: 'Something went wrong'
+        }
+    }
+}
 
 export async function fetchInpatientInfo(request: RequiredApiRequest<inPatientRequest>): Promise<ApiResponse<inPatientResponse[]>> {
 

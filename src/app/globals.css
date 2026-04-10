@@ -890,4 +890,24 @@ span.flatpickr-weekday,
          resize-y bg-white;
 }
 
+/* for print layout */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@media print {
+  .print-container {
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .no-print { display: none !important; }
+
+  .page-break {
+    page-break-before: always;
+  }
+}
 

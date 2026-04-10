@@ -1,9 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Printer, Download, ReceiptText, Wallet, Scale, ArrowDownCircle } from "lucide-react";
 import { useAuthToken } from "@/context/AuthContext";
 import { useBillMasters, useBillPaymentReceipt } from "../queries/bill-details.queries";
+import { useReactToPrint } from "react-to-print";
+import PrintLayout from "@/components/ui/printLayout/printLayout";
+import logo from "@/logo/inf-nepal-logo-dark.svg";
+
+interface PatientData {
+  name: string;
+  age: string;
+  gender: string;
+  contact?: string;
+  address?: string;
+}
 
 interface props {
   PatientCode: string;
@@ -11,6 +22,9 @@ interface props {
 
 const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
   const { authToken } = useAuthToken();
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const [patientInfo, setPatientInfo] = useState<any>(null);
 
   const { data: billMasters }        = useBillMasters(authToken, PatientCode);
   const { data: billPaymentReceipt } = useBillPaymentReceipt(authToken, PatientCode);
@@ -19,9 +33,33 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
   const totalReceipt = billPaymentReceipt?.reduce((t, i) => t + i.Amount, 0) ?? 0;
   const totalBalance = totalBilled - totalReceipt;
 
+  useEffect(() => {
+        const stored = sessionStorage.getItem("selectedPatient");
+        if (stored) setPatientInfo(JSON.parse(stored));
+      }, []);
+  
+  const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
+  const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const regCode     = patientInfo?.RegNo || patientInfo?.RegCode;
+  const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
+  const age = patientInfo?.Age;
+  const gender = patientInfo?.Gender;
+  const contact = patientInfo?.Mobile;
+  const address = patientInfo?.Address;
+  
+  const currentDate = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Bill_${PatientCode}`,
+  });
+
   return (
     <div className="space-y-4">
-
       {/* ── Page header ── */}
       <div className="
         relative overflow-hidden
@@ -42,7 +80,9 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="
+            <button 
+            onClick={handlePrint}
+            className="
               inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
               border border-slate-200 dark:border-slate-700
               text-slate-600 dark:text-slate-300
@@ -50,7 +90,7 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
               hover:bg-slate-50 dark:hover:bg-slate-700
               transition-all duration-150
             ">
-              <Printer className="w-3.5 h-3.5" /> Print
+              <Printer className="w-3.5 h-3.5" /> Print Bill
             </button>
             <button className="
               inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold
@@ -173,6 +213,120 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
         </div>
       </TableCard>
 
+      {/* Print Layout */}
+      <div ref={printRef} className="hidden print:block">
+        <PrintLayout
+          documentType="BILL"
+          hospitalInfo={{
+            name: "",
+            logo: "/images/logo/inf-nepal-logo-dark.svg",                    // Change to your actual logo
+            address: "",
+            phone: "",
+          }}
+          patientInfo={{
+            name: patientname,
+            patientId: patientId,
+            age: age,
+            gender: gender,
+            contact: contact,
+            address: address,
+          }}
+          date={currentDate}
+          footerNote="This is a computer-generated document. Please keep it safe for future reference."
+        >
+          {/* ==================== BILL BODY (Children) ==================== */}
+          <div className="space-y-10 text-sm">
+            {/* Bill Information */}
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="font-medium">Bill No: </span>
+                <span className="font-mono tracking-wider">BIL-{patientId}-{Date.now().toString().slice(-6)}</span>
+              </div>
+              <div className="text-right">
+                Bill Date: {currentDate}
+              </div>
+            </div>
+
+            {/* Billed Services */}
+            <div>
+              <h3 className="font-semibold text-base mb-4 border-b border-gray-300 pb-2">Billed Services</h3>
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-gray-100 border-b-2 border-gray-800">
+                    <th className="py-3 pl-4 text-left font-medium">Service Type</th>
+                    <th className="py-3 text-left font-medium">Description</th>
+                    <th className="py-3 text-center font-medium w-16">Qty</th>
+                    <th className="py-3 text-right font-medium w-28">Rate</th>
+                    <th className="py-3 text-right pr-4 font-medium w-32">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-300">
+                  {billMasters?.map((bill, idx) => (
+                    <tr key={idx}>
+                      <td className="pl-4 py-3">{bill.ServiceTypename}</td>
+                      <td className="py-3">{bill.ServiceName}</td>
+                      <td className="text-center py-3">{bill.Qty}</td>
+                      <td className="text-right py-3">Rs. {Number(bill.Rate || 0).toFixed(2)}</td>
+                      <td className="text-right pr-4 py-3 font-medium">Rs. {Number(bill.Amount || 0).toFixed(2)}</td>
+                    </tr>
+                  )) || (
+                    <tr>
+                      <td colSpan={5} className="py-10 text-center text-gray-500">No services billed yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Payment Receipts */}
+            {billPaymentReceipt && billPaymentReceipt.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-base mb-4 border-b border-gray-300 pb-2">Payment Receipt Details</h3>
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2 border-gray-800">
+                      <th className="py-3 pl-4 text-left font-medium">Receipt No.</th>
+                      <th className="py-3 text-left font-medium">Date</th>
+                      <th className="py-3 text-left font-medium">Particular</th>
+                      <th className="py-3 text-right pr-4 font-medium">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-300">
+                    {billPaymentReceipt.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="pl-4 py-3 font-mono">{item.Remarks}</td>
+                        <td className="py-3">{item.Date_E?.split("T")[0]} ({item.Date_N})</td>
+                        <td className="py-3">{item.Particular}</td>
+                        <td className="text-right pr-4 py-3 font-medium">Rs. {Number(item.Amount || 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Final Totals */}
+            {/* <div className="flex justify-end mt-8">
+              <div className="w-full border-2 border-gray-800 p-4 bg-gray-50 space-y-4">
+                <div className="flex justify-between">
+                  <span>Total Billed</span>
+                  <span className="font-medium">Rs. {totalBilled.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-600">
+                  <span>Total Received</span>
+                  <span className="font-medium">Rs. {totalReceipt.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-800 pt-3 text-lg font-bold">
+                  <span>Balance Due</span>
+                  <span className={totalBalance > 0 ? "text-rose-600" : "text-emerald-600"}>
+                    Rs. {totalBalance.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div> */}
+          </div>
+        </PrintLayout>
+      </div>
     </div>
   );
 };

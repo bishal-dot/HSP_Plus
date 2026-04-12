@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthToken } from "@/context/AuthContext";
 import { useOperationRecord } from "../queries/operaationrecord.queries";
 import { useInsertOperationRecord } from "../queries/operationrecord.mutations";
@@ -10,6 +10,7 @@ import {
   ChevronDown, ChevronUp, Loader2, CheckCircle2, AlertCircle,
   Clock, Droplets, FlaskConical, Microscope, Wrench, Layers,
   NotebookPen, Activity, Hash,
+  Printer,
 } from "lucide-react";
 import Chip from "@/components/form/input/Chip";
 import Section from "@/components/form/input/Section";
@@ -18,10 +19,10 @@ import Field from "@/components/form/input/Field";
 import Accordion from "@/components/form/input/Accordion";
 import TabBtn from "@/components/form/input/TabBtn";
 import DatePicker from "react-datepicker";
+import { useReactToPrint } from "react-to-print";
+import PrintLayout from "@/components/ui/printLayout/printLayout";
 
-/* ═══════════════════════════════════════════════════
-   TYPES
-═══════════════════════════════════════════════════ */
+
 interface Props {
   PatientCode: string;
   MrNO: string;
@@ -75,23 +76,74 @@ const EMPTY_FORM: OperationFormData = {
 ═══════════════════════════════════════════════════ */
 const IPDOperationRecord: React.FC<Props> = ({ PatientCode, MrNO }) => {
   const [activeTab, setActiveTab] = useState<"summary" | "form">("summary");
+  const { authToken } = useAuthToken();
+  const { data: operationRecords = [] } = useOperationRecord(
+    authToken,
+    PatientCode ?? null
+  );
+
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const [patientInfo, setPatientInfo] = useState<any>(null);
+    useEffect(() => {
+      const stored = sessionStorage.getItem("selectedPatient");
+      if (stored) setPatientInfo(JSON.parse(stored));
+    }, []);
+  
+    const patientId   = patientInfo?.MRNo    || patientInfo?.PatientCode || patientInfo?.Mrno;
+    const regCode     = patientInfo?.RegNo   || patientInfo?.RegCode;
+    const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
+  
+    /* ── print ── */
+    const currentDate = new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit", month: "long", year: "numeric",
+    }).format(new Date());
+  
+    const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Operation_Record_${patientId || "Patient"}_${Date.now()}`,
+    pageStyle: `
+      @page { size: A4 portrait; margin: 15mm; }
+      @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    `,
+  });
+  
 
   return (
     <div className="space-y-3">
       {/* ── Tab bar ── */}
-      <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 w-fit">
-        <TabBtn
-          active={activeTab === "summary"}
-          onClick={() => setActiveTab("summary")}
-          icon={<FileText className="w-3.5 h-3.5" />}
-          label="Operation Records"
-        />
-        <TabBtn
-          active={activeTab === "form"}
-          onClick={() => setActiveTab("form")}
-          icon={<Plus className="w-3.5 h-3.5" />}
-          label="Add Operation Record"
-        />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 w-fit">
+          <TabBtn
+            active={activeTab === "summary"}
+            onClick={() => setActiveTab("summary")}
+            icon={<FileText className="w-3.5 h-3.5" />}
+            label="Operation Records"
+          />
+          <TabBtn
+            active={activeTab === "form"}
+            onClick={() => setActiveTab("form")}
+            icon={<Plus className="w-3.5 h-3.5" />}
+            label="Add Operation Record"
+          />
+        </div>
+
+        {/* Print Button - Visible only on Summary Tab */}
+        {activeTab === "summary" && (
+          <button
+            onClick={handlePrint}
+            className="group relative flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium text-sm transition-all active:scale-95"
+            title="Print All Operation Records"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">Print Records</span>
+
+            {/* Hover tooltip for mobile */}
+            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap sm:hidden">
+              Print All Operation Records
+            </span>
+          </button>
+        )}
       </div>
 
       {activeTab === "summary" ? (
@@ -99,16 +151,291 @@ const IPDOperationRecord: React.FC<Props> = ({ PatientCode, MrNO }) => {
       ) : (
         <IPDOperationForm MrNO={MrNO} onSuccess={() => setActiveTab("summary")} />
       )}
+
+      {/* Print layout */}
+      <div ref={printRef} className="hidden print:block bg-white">
+        <PrintLayout
+          documentType="OPERATION RECORD"
+          hospitalInfo={{
+            name: "",
+            logo: "/images/logo/inf-nepal-logo-dark.svg",
+            address: "",
+            phone: "",
+          }}
+          patientInfo={{
+            name: patientname || "N/A",
+            patientId: patientId || "N/A",
+            age: patientInfo?.Age || "—",
+            gender: patientInfo?.Gender || "—",
+            contact: patientInfo?.Mobile || patientInfo?.Phone || "—",
+          }}
+          date={currentDate}
+          footerNote="This is a computer-generated operation record. For clinical correlation only."
+        >
+          <OperationPrintContent operationRecords={operationRecords} currentDate={currentDate} />
+        </PrintLayout>
+      </div>
     </div>
   );
 };
 
-/* ═══════════════════════════════════════════════════
-   SUMMARY VIEWER  (enhanced from original)
-═══════════════════════════════════════════════════ */
+// const OperationPrintContent = ({ 
+//   operationRecords, 
+//   currentDate 
+// }: { 
+//   operationRecords: any[]; 
+//   currentDate: string;
+// }) => {
+//   if (!operationRecords || operationRecords.length === 0) {
+//     return <p className="text-center py-20 text-gray-500">No operation records found.</p>;
+//   }
+
+//   return (
+//     <div className="space-y-12 pt-6">
+//       {operationRecords.map((op: any, index: number) => (
+//         <div 
+//           key={op.OperationId || index} 
+//           className="print:break-inside-avoid border-b border-gray-300 pb-12 last:border-none last:pb-0"
+//         >
+//           {/* Header */}
+//           <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
+//             <div>
+//               <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
+//                 {op.Op_Executed || "Debridement"}
+//               </h2>
+//               <p className="text-lg text-gray-600 mt-1">
+//                 Operation Record #{op.SN || index + 1} • {op.OperationId}
+//               </p>
+//             </div>
+//             <div className="text-right">
+//               <p className="text-sm"><strong>Date:</strong> {op.Date || op.Otdate || "13 Jan 2026"}</p>
+//               <p className="text-sm"><strong>Department:</strong> {op.Department || "Surgery"}</p>
+//               <p className="text-sm"><strong>Group:</strong> {op.Group || "Group 10 (Surgery)"}</p>
+//             </div>
+//           </div>
+
+//           {/* Patient & Team Info */}
+//           <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
+//             <div>
+//               <h3 className="font-semibold text-gray-700 mb-3 border-b pb-2">Team Information</h3>
+//               <div className="space-y-2">
+//                 <p><span className="text-gray-500">Team Member:</span> {op.TeamMember || "Shanti Giri"}</p>
+//                 <p><span className="text-gray-500">Member Role:</span> {op.MemberRole || "NURSE"}</p>
+//                 <p><span className="text-gray-500">Entered By:</span> {op.user || "dependra.tamang"}</p>
+//                 <p><span className="text-gray-500">Anaesthesia:</span> {op.anesthesiaGroup || "Local Anesthesia"}</p>
+//               </div>
+//             </div>
+//             <div>
+//               <h3 className="font-semibold text-gray-700 mb-3 border-b pb-2">Diagnosis</h3>
+//               <div className="space-y-2">
+//                 <p><span className="text-gray-500">Pre-Op:</span> {op.PreOPDiagnosis || "PVD- Necrotic Rt F4 tip"}</p>
+//                 <p><span className="text-gray-500">Post-Op:</span> {op.PostOpDiagnosis || "PVD- Necrotic Rt F4 tip"}</p>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Surgery Details */}
+//           <div className="mb-8">
+//             <h3 className="font-semibold text-gray-700 mb-3 border-b pb-2">Surgery Details</h3>
+//             <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
+//               <div><span className="text-gray-500">Proposed:</span> {op.Op_Preposed || "Debriement +/- amputation"}</div>
+//               <div><span className="text-gray-500">Executed:</span> {op.Op_Executed || "Debridement"}</div>
+//               <div><span className="text-gray-500">Surgery:</span> {op.Surgery || "—"}</div>
+//               <div><span className="text-gray-500">OT Procedure:</span> {op.OTProcedure || "—"}</div>
+//             </div>
+//           </div>
+
+//           {/* Operative Findings / Notes */}
+//           {op.Diagnosis && (
+//             <div className="mb-10">
+//               <h3 className="font-semibold text-gray-700 mb-3 border-b pb-2">Intraoperative Findings & Procedure Notes</h3>
+//               <div className="bg-gray-50 border border-gray-200 p-5 rounded-lg text-sm leading-relaxed whitespace-pre-wrap font-mono text-gray-800">
+//                 {op.Diagnosis}
+//               </div>
+//             </div>
+//           )}
+
+//           {/* Intraoperative & Other Details */}
+//           <div className="grid grid-cols-2 gap-8 text-sm">
+//             <div>
+//               <h3 className="font-semibold text-gray-700 mb-3">Intraoperative Details</h3>
+//               <div className="space-y-2.5">
+//                 <p><span className="text-gray-500">Skin Incision Time:</span> {op.SkinIncisionTime || "—"}</p>
+//                 <p><span className="text-gray-500">Skin Closure Time:</span> {op.SkinClosureTime || "—"}</p>
+//                 <p><span className="text-gray-500">Blood Loss:</span> {op.BloodLoss || "—"}</p>
+//                 <p><span className="text-gray-500">Counts:</span> {op.Counts || "—"}</p>
+//                 <p><span className="text-gray-500">II Usage:</span> {op.IIUsage || "—"}</p>
+//                 <p><span className="text-gray-500">Closure:</span> {op.Closure || "—"}</p>
+//               </div>
+//             </div>
+
+//             <div>
+//               <h3 className="font-semibold text-gray-700 mb-3">Specimens & Others</h3>
+//               <div className="space-y-2.5">
+//                 <p><span className="text-gray-500">Biopsy:</span> {op.BIOPSY || "—"}</p>
+//                 <p><span className="text-gray-500">Culture & Sensitivity:</span> {op.CultureSensitivity || "—"}</p>
+//                 <p><span className="text-gray-500">Implant:</span> {op.IMPLANT || "—"}</p>
+//                 <p><span className="text-gray-500">Remarks:</span> {op.REMARKS || "—"}</p>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Footer */}
+//           <div className="mt-12 pt-6 border-t border-gray-200 text-xs text-gray-500 flex justify-between">
+//             <div>Printed on: {currentDate}</div>
+//             <div className="text-right">
+//               This is a computer-generated document.<br />
+//               For clinical correlation only.
+//             </div>
+//           </div>
+//         </div>
+//       ))}
+//     </div>
+//   );
+// };
+
+const OperationPrintContent = ({
+  operationRecords,
+  currentDate
+}: {
+  operationRecords: any[];
+  currentDate: string;
+}) => {
+  if (!operationRecords || operationRecords.length === 0) {
+    return <p className="text-center py-10 text-gray-500">No operation records found.</p>;
+  }
+
+  const FieldRow = ({ label, value }: { label: string; value: any }) => (
+    <div className="flex">
+      <span className="w-[140px] text-gray-600">{label}</span>
+      <span className="font-medium text-gray-900">: {value || "—"}</span>
+    </div>
+  );
+
+  return (
+    <div className="text-[12px] leading-relaxed font-sans">
+      {operationRecords.map((op: any, index: number) => (
+        <div
+          key={op.OperationId || index}
+          className="w-full mx-auto p-5 print:p-4 break-inside-avoid"
+          style={{
+            pageBreakAfter: index === operationRecords.length - 1 ? "auto" : "always"
+          }}
+        >
+
+          {/* 🔹 Header Info */}
+          <div className="flex justify-between items-start mb-4 border-b border-gray-400 pb-2">
+            <div>
+              <h2 className="text-[14px] font-bold">
+                {op.Op_Executed || "Operation"}
+              </h2>
+              <p className="text-[11px] text-gray-600">
+                ID: {op.OperationId || "—"}
+              </p>
+            </div>
+
+            <div className="text-right text-[11px]">
+              <p><b>Date:</b> {op.Date || op.Otdate || "—"}</p>
+              <p><b>Department:</b> {op.Department || "—"}</p>
+            </div>
+          </div>
+
+          {/* 🔹 Team + Diagnosis */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+
+            <div className="border border-gray-400 p-3">
+              <h3 className="font-semibold mb-2 text-[12px]">Team Information</h3>
+              <div className="space-y-1">
+                <FieldRow label="Member" value={op.TeamMember} />
+                <FieldRow label="Role" value={op.MemberRole} />
+                <FieldRow label="Anaesthesia" value={op.anesthesiaGroup} />
+                <FieldRow label="Entered By" value={op.user} />
+              </div>
+            </div>
+
+            <div className="border border-gray-400 p-3">
+              <h3 className="font-semibold mb-2 text-[12px]">Diagnosis</h3>
+              <div className="space-y-1">
+                <FieldRow label="Pre-Operative" value={op.PreOPDiagnosis} />
+                <FieldRow label="Post-Operative" value={op.PostOpDiagnosis} />
+              </div>
+            </div>
+
+          </div>
+
+          {/* 🔹 Surgery Details */}
+          <div className="border border-gray-400 p-3 mb-4">
+            <h3 className="font-semibold mb-2 text-[12px]">Surgery Details</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+              <FieldRow label="Proposed" value={op.Op_Preposed} />
+              <FieldRow label="Executed" value={op.Op_Executed} />
+              <FieldRow label="Procedure" value={op.OTProcedure} />
+              <FieldRow label="Surgery" value={op.Surgery} />
+            </div>
+          </div>
+
+          {/* 🔹 Notes */}
+          {op.Diagnosis && (
+            <div className="border border-gray-400 p-3 mb-4 break-inside-avoid">
+              <h3 className="font-semibold mb-2 text-[12px]">Operative Notes</h3>
+              <p className="whitespace-pre-wrap break-words text-[11px] leading-relaxed">
+                {op.Diagnosis}
+              </p>
+            </div>
+          )}
+
+          {/* 🔹 Intra + Others */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+
+            <div className="border border-gray-400 p-3">
+              <h3 className="font-semibold mb-2 text-[12px]">Intraoperative Details</h3>
+              <div className="space-y-1">
+                <FieldRow label="Incision Time" value={op.SkinIncisionTime} />
+                <FieldRow label="Closure Time" value={op.SkinClosureTime} />
+                <FieldRow label="Blood Loss" value={op.BloodLoss} />
+                <FieldRow label="Counts" value={op.Counts} />
+              </div>
+            </div>
+
+            <div className="border border-gray-400 p-3">
+              <h3 className="font-semibold mb-2 text-[12px]">Specimens & Others</h3>
+              <div className="space-y-1">
+                <FieldRow label="Biopsy" value={op.BIOPSY} />
+                <FieldRow label="C & S" value={op.CultureSensitivity} />
+                <FieldRow label="Implant" value={op.IMPLANT} />
+                <FieldRow label="Remarks" value={op.REMARKS} />
+              </div>
+            </div>
+
+          </div>
+
+          {/* 🔹 Signatures */}
+          <div className="flex justify-between mt-8 text-[11px]">
+            <div className="text-center">
+              <div className="border-t border-gray-700 w-44 mx-auto mb-1"></div>
+              Surgeon Signature
+            </div>
+
+            <div className="text-center">
+              <div className="border-t border-gray-700 w-44 mx-auto mb-1"></div>
+              Assistant Signature
+            </div>
+          </div>
+
+          {/* 🔹 Footer */}
+          <div className="mt-6 text-[10px] flex justify-between text-gray-500">
+            <span>Printed: {currentDate}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const IPDOperationRecords: React.FC<{ PatientCode: string }> = ({ PatientCode }) => {
   const { authToken } = useAuthToken();
   const { data: operationRecords, isLoading } = useOperationRecord(authToken, PatientCode ?? null);
+console.log(operationRecords);
 
   if (isLoading) return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">

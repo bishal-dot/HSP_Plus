@@ -1,6 +1,5 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-
 interface AuthContextType {
     authToken: string | null;
     username: string | null;
@@ -13,6 +12,12 @@ interface AuthContextType {
     setConsultantCode: (code: number) => void;
     isLoading: boolean;
     isAuthenticated: boolean;
+}
+
+type TokenPayload = {
+    username?: string;
+    consultantCode?: number;
+    deptCode?: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,7 +56,6 @@ export const AuthTokenProvider = ({ children }: { children: ReactNode }) => {
         initialConsultantCode ? parseInt(initialConsultantCode) : 0
     );
     const [isLoading, setIsLoading] = useState(false);
-
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'authToken') {

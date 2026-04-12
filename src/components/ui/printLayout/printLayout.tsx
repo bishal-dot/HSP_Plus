@@ -36,7 +36,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({
   date,
   children,
   footerNote,
-  copyrightText = "© 2026 INF NEPAL. All Rights Reserved.",
+  // copyrightText = "© 2026 INF NEPAL. All Rights Reserved.",
 }) => {
   return (
     <div
@@ -45,7 +45,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({
       style={{
         width: '210mm',
         minHeight: '297mm',
-        padding: '15mm 12mm', // Inner padding for better look
+        padding: '12mm 10mm', // Inner padding for better look
       }}
     >
       {/* ==================== HEADER ==================== */}
@@ -82,7 +82,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({
 
           {/* Document Type & Date */}
           <div className="text-right">
-            <div className="inline-block border-2 border-gray-900 px-8 py-2 text-2xl font-bold uppercase tracking-widest">
+            <div className="inline-block border-2 border-gray-900 px-8 py-2 text-lg font-bold uppercase tracking-widest">
               {documentType}
             </div>
             <p className="mt-4 text-sm font-medium text-gray-700">
@@ -113,16 +113,16 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({
       </header>
 
       {/* ==================== DYNAMIC BODY ==================== */}
-      <main className="print-body min-h-[180mm] mb-12">
+      <main className="print-body mb-12">
         {children}
       </main>
 
       {/* ==================== FOOTER ==================== */}
       <footer className="border-t-2 border-gray-800 pt-6 text-xs">
         {/* Copyright */}
-        <div className="text-center mt-10 text-[10px] text-gray-500 border-t border-gray-300 pt-4">
+        {/* <div className="text-center mt-10 text-[10px] text-gray-500 border-t border-gray-300 pt-4">
           {copyrightText}
-        </div>
+        </div> */}
       </footer>
     </div>
   );

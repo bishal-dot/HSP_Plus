@@ -115,7 +115,7 @@ export async function createOrUpdatePrescription(tokenNo: string, body: any) {
         { name: "UnkId",            type: sql.NVarChar(120), value: String(body.UnkId ?? 0) },
         { name: "PatientCode",      type: sql.NVarChar(120), value: body.PatientCode },
         { name: "RegNo",            type: sql.NVarChar(120), value: body.RegNo },
-        { name: "PrescriptionType", type: sql.NVarChar(120), value: body.PrescriptionType ?? "Regular" },
+        { name: "PrescriptionType", type: sql.NVarChar(120), value: body.PrescriptionType ?? "OPD" },
         { name: "DrugsCode",        type: sql.NVarChar(120), value: String(body.DrugsCode) },  // item ID
         { name: "Unit",             type: sql.NVarChar(120), value: "" },                       // SP fetches this
         { name: "Batch",            type: sql.NVarChar(120), value: body.Batch    ?? "" },

@@ -32,7 +32,31 @@ const DATE_OPTIONS = [
 
 const OPDDashboard: React.FC = () => {
   const { authToken, consultantCode, username, isConsultant } = useAuthToken();
+  
   const router = useRouter();
+
+  const [deptCode, setDeptCode] = useState<number | null>(null);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    if(!consultantCode) return;
+
+    const fetchDeptCode = async () => {
+      const res = await fetch(`/api/masters/consultant/${consultantCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        cache: 'no-cache',
+      });
+      const result = await res.json();
+      console.log("Faculty Master", result?.FacultyCode);
+      setDeptCode(result?.FacultyCode);
+    };
+
+    fetchDeptCode();
+  }, [consultantCode])
 
   const [show, setShow] = useState(false);
   const [showAllPatients, setShowAllPatients] = useState(false);
@@ -124,7 +148,7 @@ const OPDDashboard: React.FC = () => {
 
   const { data: opdPatientDayWise, isLoading, isFetching, refetch } = useOPDPatientsDayWise(authToken, {
     DTODAY: '2026-01-19',
-    deptcode: 1,
+    deptcode: deptCode ?? 0,
     consultantcode: consultantCode,
     centerid: 1,
   });
@@ -134,7 +158,7 @@ const OPDDashboard: React.FC = () => {
   const { data: patientcount = [] } = useOPDPatientsDayWiseCount(authToken, {
     DTODAY: '2026-01-19',
     centerid: 1,
-    deptcode: 1,
+    deptcode: deptCode ?? 0,
   })
 
   // Client-side search filter

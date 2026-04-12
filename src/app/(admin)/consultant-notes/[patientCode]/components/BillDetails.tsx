@@ -8,14 +8,6 @@ import { useReactToPrint } from "react-to-print";
 import PrintLayout from "@/components/ui/printLayout/printLayout";
 import logo from "@/logo/inf-nepal-logo-dark.svg";
 
-interface PatientData {
-  name: string;
-  age: string;
-  gender: string;
-  contact?: string;
-  address?: string;
-}
-
 interface props {
   PatientCode: string;
 }

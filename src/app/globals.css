@@ -890,24 +890,65 @@ span.flatpickr-weekday,
          resize-y bg-white;
 }
 
-/* for print layout */
+/* Global Print Styles for Multi-Page Support */
 @page {
   size: A4 portrait;
-  margin: 10mm;
+  margin: 0;
 }
 
 @media print {
-  .print-container {
-    width: 100% !important;
+  html, body {
     margin: 0 !important;
-    box-shadow: none !important;
     padding: 0 !important;
+    height: auto !important;        /* Critical for multi-page */
+    overflow: visible !important;
   }
 
-  .no-print { display: none !important; }
+  .print-container {
+    width: 210mm !important;
+    min-height: 297mm !important;   /* Minimum one full page */
+    height: auto !important;        /* Allow growth for more pages */
+    max-height: none !important;    /* Remove any cap */
+    margin: 0 auto !important;
+    padding: 12mm 10mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    border: 1px solid transparent !important;
+    background: white !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
 
-  .page-break {
-    page-break-before: always;
+  .print-body {
+    min-height: 0 !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Allow normal flowing of content across pages */
+  header, main, footer {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Try to keep header and patient info together on first page */
+  header {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Footer should not be split */
+  footer {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: auto !important;
+  }
+
+  .no-print { 
+    display: none !important; 
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
-

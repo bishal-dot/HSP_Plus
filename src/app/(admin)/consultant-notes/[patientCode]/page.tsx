@@ -55,7 +55,7 @@ export default function ConsultantNotesPage() {
   console.log("patientInfoFromSession:", patientInfo);
 
   const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
-  const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const patientNo   = patientInfo?.RegNo || patientInfo?.IPDCODE || patientInfo?.RegCode;
   const patientType = patientInfo ? (patientInfo.IPDCODE ? "ipd" : "opd") : null;
   const isENT       = patientInfo?.TokenNo?.toLowerCase().includes("ent") ||
                       patientInfo?.wardName === "Ear Ward" ||

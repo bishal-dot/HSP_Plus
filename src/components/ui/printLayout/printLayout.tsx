@@ -46,6 +46,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({
         width: '210mm',
         minHeight: '297mm',
         padding: '12mm 10mm', // Inner padding for better look
+        boxSizing: 'border-box',
       }}
     >
       {/* ==================== HEADER ==================== */}

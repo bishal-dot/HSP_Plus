@@ -11,6 +11,7 @@ import {
   Clock, Droplets, FlaskConical, Microscope, Wrench, Layers,
   NotebookPen, Activity, Hash,
   Printer,
+  Download,
 } from "lucide-react";
 import Chip from "@/components/form/input/Chip";
 import Section from "@/components/form/input/Section";
@@ -25,7 +26,7 @@ import PrintLayout from "@/components/ui/printLayout/printLayout";
 
 interface Props {
   PatientCode: string;
-  MrNO: string;
+  MrNO?: string;
 }
 
 interface OperationFormData {
@@ -95,17 +96,33 @@ const IPDOperationRecord: React.FC<Props> = ({ PatientCode, MrNO }) => {
     const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
   
     /* ── print ── */
-    const currentDate = new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit", month: "long", year: "numeric",
-    }).format(new Date());
+  const currentDate = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit", month: "long", year: "numeric",
+  }).format(new Date());
   
-    const handlePrint = useReactToPrint({
+  const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `Operation_Record_${patientId || "Patient"}_${Date.now()}`,
     pageStyle: `
       @page { size: A4 portrait; margin: 15mm; }
       @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     `,
+  });
+
+const handleExportToPdf = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Operation_Record_${patientId || "Patient"}_${Date.now()}`,
+    pageStyle: `
+      @page { 
+        size: A4 portrait; 
+        margin: 0; 
+      }
+      @media print {
+        .no-print { display: none !important; }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .print-container { box-shadow: none !important; }
+      }
+    `
   });
   
 
@@ -130,30 +147,38 @@ const IPDOperationRecord: React.FC<Props> = ({ PatientCode, MrNO }) => {
 
         {/* Print Button - Visible only on Summary Tab */}
         {activeTab === "summary" && (
-          <button
+          <div className="flex items-center gap-2">
+            <button 
             onClick={handlePrint}
-            className="group relative flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium text-sm transition-all active:scale-95"
-            title="Print All Operation Records"
-          >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Print Records</span>
-
-            {/* Hover tooltip for mobile */}
-            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap sm:hidden">
-              Print All Operation Records
-            </span>
-          </button>
+            className="
+              inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
+              border border-slate-200 dark:border-slate-700
+              text-slate-600 dark:text-slate-300
+              bg-white dark:bg-slate-800
+              hover:bg-slate-50 dark:hover:bg-slate-700
+              transition-all duration-150
+            ">
+              <Printer className="w-3.5 h-3.5" /> Print
+            </button>
+           {/* Export as PDF Button - Same handler + better label */}
+            <button 
+              onClick={handleExportToPdf}   // Reuse the same function
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
+            >
+              <Download className="w-3.5 h-3.5" /> Export as PDF
+            </button>
+          </div>
         )}
       </div>
 
       {activeTab === "summary" ? (
         <IPDOperationRecords PatientCode={PatientCode} />
       ) : (
-        <IPDOperationForm MrNO={MrNO} onSuccess={() => setActiveTab("summary")} />
+        <IPDOperationForm MrNO={MrNO || ""} onSuccess={() => setActiveTab("summary")} />
       )}
 
       {/* Print layout */}
-      <div ref={printRef} className="hidden print:block bg-white">
+      <div ref={printRef} className="hidden print:block bg-white print-only">
         <PrintLayout
           documentType="OPERATION RECORD"
           hospitalInfo={{

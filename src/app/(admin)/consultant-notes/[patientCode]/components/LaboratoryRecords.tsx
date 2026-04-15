@@ -6,6 +6,7 @@ import {
   FlaskConical, Calendar, TrendingUp, TrendingDown, Minus,
   Activity,
   Printer,
+  Download,
 } from "lucide-react";
 import { useLabRecords } from "../queries/labRecords.queries";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +42,22 @@ const LaboratoryRecords: React.FC<props> = ({ Patientcode }) => {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `Prescription_${patientId}`,
+  });
+
+  const handleExportToPdf = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Operation_Record_${patientId || "Patient"}_${Date.now()}`,
+    pageStyle: `
+      @page { 
+        size: A4 portrait; 
+        margin: 0; 
+      }
+      @media print {
+        .no-print { display: none !important; }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .print-container { box-shadow: none !important; }
+      }
+    `
   });
 
   if (isFetching) return (
@@ -85,42 +102,30 @@ const LaboratoryRecords: React.FC<props> = ({ Patientcode }) => {
         <div className="flex items-center gap-2 sm:gap-3">
           
           {/* Print All Reports Button */}
-          <button
+          <div className="flex items-center gap-2">
+            <button 
             onClick={handlePrint}
-            className="group relative inline-flex items-center justify-center w-5 h-5 sm:w-auto sm:h-auto sm:px-5 sm:py-2.5 
-                      bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium 
-                      transition-all duration-200 active:scale-95"
-            title="Print All Reports"   // Fallback tooltip
-          >
-            <Printer className="w-5 h-5 sm:mr-2" />
-            <span className="hidden sm:inline text-sm">Print All</span>
-            
-            {/* Hover Text (Mobile + Small screens) */}
-            <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-md 
-                            opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap
-                            sm:hidden">
-              Print All Reports
-            </span>
-          </button>
-
-          {/* Download PDF Button */}
-          <button
-            className="group relative inline-flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-5 sm:py-2.5 
-                      border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 
-                      text-slate-700 dark:text-slate-300 rounded-xl font-medium 
-                      transition-all duration-200 active:scale-95"
-            title="Download PDF"
-          >
-            <FileText className="w-5 h-5 sm:mr-2" />
-            <span className="hidden sm:inline text-sm">Download PDF</span>
-            
-            {/* Hover Text for small screens */}
-            <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-md 
-                            opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap
-                            sm:hidden">
-              Download PDF
-            </span>
-          </button>
+            className="
+              inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
+              border border-slate-200 dark:border-slate-700
+              text-slate-600 dark:text-slate-300
+              bg-white dark:bg-slate-800
+              hover:bg-slate-50 dark:hover:bg-slate-700
+              transition-all duration-150
+            ">
+              <Printer className="w-3.5 h-3.5" /> Print
+            </button>
+            <button 
+            onClick={handleExportToPdf} 
+            className="
+              inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold
+              bg-indigo-600 hover:bg-indigo-700 text-white
+              shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40
+              transition-all duration-150
+            ">
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+          </div>
         </div>
       </div>
       {reports.map((data, idx) => (

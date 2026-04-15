@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { use, useEffect, useRef, useState } from "react";
 import { Printer, Download, ReceiptText, Wallet, Scale, ArrowDownCircle } from "lucide-react";
 import { useAuthToken } from "@/context/AuthContext";
 import { useBillMasters, useBillPaymentReceipt } from "../queries/bill-details.queries";
 import { useReactToPrint } from "react-to-print";
 import PrintLayout from "@/components/ui/printLayout/printLayout";
-import logo from "@/logo/inf-nepal-logo-dark.svg";
+
 
 interface props {
   PatientCode: string;
@@ -24,6 +24,11 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
   const totalBilled  = billMasters?.reduce((t, b) => t + b.Amount, 0) ?? 0;
   const totalReceipt = billPaymentReceipt?.reduce((t, i) => t + i.Amount, 0) ?? 0;
   const totalBalance = totalBilled - totalReceipt;
+
+  // const { generatePDF } = usePrintToPDF({
+  //   filename: `BILL_${PatientCode}_${new Date().toISOString().slice(0,10)}`,
+  //   targetRef: printRef,
+  // });
 
   useEffect(() => {
         const stored = sessionStorage.getItem("selectedPatient");
@@ -48,6 +53,22 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `Bill_${PatientCode}`,
+  });
+
+  const handleExportToPdf = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Operation_Record_${patientId || "Patient"}_${Date.now()}`,
+    pageStyle: `
+      @page { 
+        size: A4 portrait; 
+        margin: 0; 
+      }
+      @media print {
+        .no-print { display: none !important; }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .print-container { box-shadow: none !important; }
+      }
+    `
   });
 
   return (
@@ -84,7 +105,9 @@ const BillDetailsPage: React.FC<props> = ({ PatientCode }) => {
             ">
               <Printer className="w-3.5 h-3.5" /> Print Bill
             </button>
-            <button className="
+            <button 
+            onClick={handleExportToPdf} 
+            className="
               inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold
               bg-indigo-600 hover:bg-indigo-700 text-white
               shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40

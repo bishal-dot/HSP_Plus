@@ -76,7 +76,7 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
     }
   },[patientInfo])
   
-  const patientNo = patientInfo?.TokenNo || patientInfo?.IPDCODE;
+  const patientNo = patientInfo?.RegNo || patientInfo?.IPDCODE || patientInfo?.RegCode;
   const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
   const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
 
@@ -292,6 +292,10 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
   }
 
   const handleSaveSsdEstimate = async () => {
+    if(!patientNo){
+      alert("Error: Registration Code is missing. Cannot save estimate.");
+      return;
+    }
     if (tableEstimateData.length == 0) {
       alert("No estimate items to save.");
     } else {
@@ -304,8 +308,8 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
         remarks: item.remarks,
       }));
       const payload = {
-        patientCode: patientCode,
-        patientRegCode: patientRegCode,
+        patientCode: patientId,
+        patientRegCode: String(patientRegCode || patientNo),
         totalAmount: estimateDetails.reduce((sum, item) => sum + item.amount, 0),
         isVerified: 0,
         estimateDetails: estimateDetails,

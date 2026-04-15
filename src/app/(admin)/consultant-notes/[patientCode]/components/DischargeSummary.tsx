@@ -10,6 +10,7 @@ import {
   BedDouble, NotebookPen, HeartPulse, Plus, FileText,
   ChevronDown, ChevronUp, Loader2, CheckCircle2, AlertCircle,
   Printer,
+  Download,
 } from "lucide-react";
 import Chip from "@/components/form/input/Chip";
 import Section from "@/components/form/input/Section";
@@ -89,9 +90,7 @@ const DISCHARGE_TYPES = [
   "Referred", "Expired", "Absconded",
 ];
 
-/* ═══════════════════════════════════════════════════
-   MAIN WRAPPER
-═══════════════════════════════════════════════════ */
+
 const IPDDischargeRecord: React.FC<Props> = ({ MrNO }) => {
   const { authToken } = useAuthToken();
   const { data: dischargeSummary, isLoading } = useDischargeSummary(authToken, MrNO);
@@ -106,22 +105,38 @@ const IPDDischargeRecord: React.FC<Props> = ({ MrNO }) => {
         if (stored) setPatientInfo(JSON.parse(stored));
       }, []);
     
-      const patientId   = patientInfo?.MRNo    || patientInfo?.PatientCode || patientInfo?.Mrno;
-      const regCode     = patientInfo?.RegNo   || patientInfo?.RegCode;
-      const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
+    const patientId   = patientInfo?.MRNo    || patientInfo?.PatientCode || patientInfo?.Mrno;
+    const regCode     = patientInfo?.RegNo   || patientInfo?.RegCode;
+    const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
+  
+    /* ── print ── */
+    const currentDate = new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit", month: "long", year: "numeric",
+    }).format(new Date());
     
-      /* ── print ── */
-      const currentDate = new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit", month: "long", year: "numeric",
-      }).format(new Date());
-    
-      const handlePrint = useReactToPrint({
+    const handlePrint = useReactToPrint({
       contentRef: printRef,
       documentTitle: `Discharge Summary_${patientId || "Patient"}_${Date.now()}`,
       pageStyle: `
         @page { size: A4 portrait; margin: 15mm; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       `,
+    });
+
+    const handleExportToPdf = useReactToPrint({
+      contentRef: printRef,
+      documentTitle: `Operation_Record_${patientId || "Patient"}_${Date.now()}`,
+      pageStyle: `
+        @page { 
+          size: A4 portrait; 
+          margin: 0; 
+        }
+        @media print {
+          .no-print { display: none !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-container { box-shadow: none !important; }
+        }
+      `
     });
 
   return (
@@ -146,19 +161,30 @@ const IPDDischargeRecord: React.FC<Props> = ({ MrNO }) => {
 
         {/* Print Button - Visible only on Summary Tab */}
         {activeTab === "summary" && (
-          <button
+          <div className="flex items-center gap-2">
+            <button 
             onClick={handlePrint}
-            className="group relative flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium text-sm transition-all active:scale-95"
-            title="Print All Discharge Summary"
-          >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Print</span>
-
-            {/* Hover tooltip for mobile */}
-            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap sm:hidden">
-              Print All Operation Records
-            </span>
-          </button>
+            className="
+              inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
+              border border-slate-200 dark:border-slate-700
+              text-slate-600 dark:text-slate-300
+              bg-white dark:bg-slate-800
+              hover:bg-slate-50 dark:hover:bg-slate-700
+              transition-all duration-150
+            ">
+              <Printer className="w-3.5 h-3.5" /> Print
+            </button>
+            <button 
+            onClick={handleExportToPdf} 
+            className="
+              inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold
+              bg-indigo-600 hover:bg-indigo-700 text-white
+              shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40
+              transition-all duration-150
+            ">
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+          </div>
         )}
       </div>
 

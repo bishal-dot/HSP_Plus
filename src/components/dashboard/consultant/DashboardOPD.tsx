@@ -154,6 +154,7 @@ const OPDDashboard: React.FC = () => {
   });
 
   const patients = opdPatientDayWise?.data ?? [];
+  console.log("OPD Patients", patients);
 
   const { data: patientcount = [] } = useOPDPatientsDayWiseCount(authToken, {
     DTODAY: '2026-01-19',

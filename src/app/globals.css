@@ -904,6 +904,9 @@ span.flatpickr-weekday,
     overflow: visible !important;
   }
 
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+
   .print-container {
     width: 210mm !important;
     min-height: 297mm !important;   /* Minimum one full page */
@@ -947,8 +950,14 @@ span.flatpickr-weekday,
     display: none !important; 
   }
 
+  .no-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+ 
 }

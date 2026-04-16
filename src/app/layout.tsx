@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthTokenProvider, useAuthToken } from '@/context/AuthContext';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { ConsultantProvider } from '@/context/ConsultantContext';
 
 
 const outfit = Outfit({
@@ -25,7 +26,9 @@ export default function RootLayout({
         <AuthTokenProvider>
           <ThemeProvider>
             <QueryClientProvider client={queryClient}>
-              <SidebarProvider>{children}</SidebarProvider>
+              <SidebarProvider>
+                {children}
+              </SidebarProvider>
             </QueryClientProvider>
           </ThemeProvider>
           <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">

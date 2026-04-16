@@ -12,7 +12,7 @@ const patientQueryKeys = (authToken: string) => ["serviceTypes", authToken];
 export default function Dashboard({ children }: { children: React.ReactNode; }) {
   const router = useRouter();
   const { authToken } = useAuthToken();
-
+  console.log("Auth Token", authToken);
   const {
     data: patientInfo = [],
     isLoading: patientLoading,

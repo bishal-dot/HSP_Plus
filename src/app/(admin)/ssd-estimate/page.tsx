@@ -37,8 +37,6 @@ export default function Dashboard({ children }: { children: React.ReactNode; }) 
     retry: false,
   });
 
-  console.log("patientInfo", patientInfo);
-
   if (patientLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">

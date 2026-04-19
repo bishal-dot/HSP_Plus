@@ -58,10 +58,9 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
   const { authToken } = useAuthToken();
   const patientcode = patientInfo?.PatientCode || patientInfo?.MRNo;
 
-  const { patientCode, patientRegCode } = params as {
-    patientCode: string; 
-    patientRegCode: string;
-  };
+  const patientCode = params.patientCode as string;
+  const patientRegCode= params.patientOpdCode as string;  
+
 
   const [selectedServiceType, setSelectedServiceType] = useState<string>("");
   const [selectedService, setSelectedService] = useState<SingleValue<ServiceOption> | null>(null);
@@ -69,49 +68,12 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
   const [remarks, setRemarks] = useState<string>("");
   const [patientState, setPatientState] = useState<any | null>(null);
 
-  useEffect(() => {
-    if(!patientInfo){
-      const stored = sessionStorage.getItem('selectedPatient');
-      if(stored) setPatientState(JSON.parse(stored));
-    }
-  },[patientInfo])
-  
-  const patientNo = patientInfo?.RegNo || patientInfo?.IPDCODE || patientInfo?.RegCode;
-  const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
-  const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
-
-  const effectivePatient: NormalizedPatient = useMemo(() => {
-  if (patientInfo) {
-    // OPD patient
-    return {
-      patientCode: patientId,
-      name: patientname,
-      age: patientInfo.Age,
-      sex: patientInfo.Sex || patientInfo.Gender,
-      mobile: patientInfo.Mobile,
-      consultant: patientInfo.ConsultingDoctor || patientInfo.CONSULTANT || patientInfo.BlockedBy,
-      facultyName: patientInfo.Gphreporting || patientInfo.WARD,
-      admissionNo: patientInfo.AdmissionNo,
-    };
-  } else if (patientState) {
-    // IPD patient
-    return {
-      patientCode: patientState.PatientCode,
-      name: patientState.PatientName || patientState.PATIENTNAME, // single string
-      age: patientState.Age,
-      sex: "N/A", // IPD has no sex field
-      mobile: patientState.Mobile,
-      consultant: patientState.Gphreporting || "N/A",
-      facultyName: patientState.wardName || "N/A",
-      admissionNo: String(patientState.IPDCODE),
-      ward: patientState.wardName || "",
-      bedNo: patientState.bedno || "",
-      ipdCode: patientState.IPDCODE,
-    };
-  }
-  return {} as NormalizedPatient;
-}, [patientInfo, patientState]);
-
+  // useEffect(() => {
+  //   if (!patientInfo && !patientCode && !patientRegCode) {
+  //     const stored = sessionStorage.getItem('selectedPatient');
+  //     if (stored) setPatientState(JSON.parse(stored));
+  //   }
+  // }, [patientInfo, patientCode, patientRegCode]);
 
   const {
     data: patientDetails,
@@ -132,14 +94,99 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
         throw new Error(errData.message || "Failed to fetch patient info");
       }
       const result = await res.json();
+      console.log("Patient API Raw Response:", result);
       if (!result.success) throw new Error(result.message || "Unexpected response format");
       return result.data;
     },
     enabled: !!authToken && !!patientCode && !!patientRegCode,
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
+  
+    const patientNo = patientInfo?.RegNo || patientInfo?.IPDCODE || patientInfo?.RegCode || patientRegCode;
+    const patientId = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno 
+      || patientDetails?.PatientCode || patientCode;
+    const patientname = patientInfo?.patientname || patientInfo?.PatientName || patientInfo?.PATIENTNAME;
 
+//   const effectivePatient: NormalizedPatient = useMemo(() => {
+//   if (patientInfo) {
+//     // OPD patient
+//     return {
+//       patientCode: patientId,
+//       name: patientname,
+//       age: patientInfo.Age,
+//       sex: patientInfo.Sex || patientInfo.Gender,
+//       mobile: patientInfo.Mobile,
+//       consultant: patientInfo.ConsultingDoctor || patientInfo.CONSULTANT || patientInfo.BlockedBy,
+//       facultyName: patientInfo.Gphreporting || patientInfo.WARD,
+//       admissionNo: patientInfo.AdmissionNo,
+//     };
+//   } else if (patientState) {
+//     // IPD patient
+//     return {
+//       patientCode: patientState.PatientCode,
+//       name: patientState.PatientName || patientState.PATIENTNAME, // single string
+//       age: patientState.Age,
+//       sex: "N/A", // IPD has no sex field
+//       mobile: patientState.Mobile,
+//       consultant: patientState.Gphreporting || "N/A",
+//       facultyName: patientState.wardName || "N/A",
+//       admissionNo: String(patientState.IPDCODE),
+//       ward: patientState.wardName || "",
+//       bedNo: patientState.bedno || "",
+//       ipdCode: patientState.IPDCODE,
+//     };
+//   }
+//   else if(patientDetails){
+//     // Fetched from API via URL params (e.g. navigating from Dashboard Edit)
+//     return {
+//       patientCode: patientDetails?.PatientCode || patientDetails?.MRNo || patientCode,
+//       name: patientDetails?.PatientName || patientDetails?.patientname || patientDetails?.PATIENTNAME, 
+//       age: patientDetails?.Age,
+//       sex: patientDetails?.Sex || patientDetails?.Gender || "N/A",
+//       mobile: patientDetails?.Mobile,
+//       consultant: patientDetails?.ConsultingDoctor || patientDetails?.CONSULTANT || "N/A",
+//       facultyName: patientDetails?.Gphreporting || patientDetails?.WARD || "N/A",
+//       admissionNo: patientDetails?.AdmissionNo || patientDetails?.RegNo,
+//     };
+//   }
+//   return { } as NormalizedPatient;
+// }, [patientInfo, patientState, patientDetails]);
+
+  const effectivePatient: NormalizedPatient = useMemo(() => {
+    const source = patientInfo || 
+                  (Array.isArray(patientDetails) ? patientDetails[0] : patientDetails);
+
+    if (!source || (Array.isArray(source) && source.length === 0)) {
+      return {
+        patientCode: patientCode || "",
+        name: "Patient Not Found in Database",
+        age: "",
+        sex: "N/A",
+        mobile: "",
+        consultant: "N/A",
+        facultyName: "N/A",
+      } as NormalizedPatient;
+    }
+
+    return {
+      patientCode: source.PatientCode || source.MRNo || patientCode || "",
+      name: source.PatientName || 
+            source.patientname || 
+            source.PATIENTNAME || 
+            source.FirstName + source.LastName || 
+            source.Name || 
+            (source.FirstName && source.LastName ? `${source.FirstName} ${source.LastName}` : "Unknown"),
+      age: source.Age || source.age || "",
+      sex: source.Sex || source.Gender || "N/A",
+      mobile: source.Mobile || source.mobile || "",
+      consultant: source.ConsultingDoctor || source.CONSULTANT || "N/A" || source.EstimatedBy,
+      facultyName: source.Gphreporting || source.WARD || source.wardName || "N/A",
+      admissionNo: source.AdmissionNo || source.RegNo || "",
+      ward: source.wardName || source.WARD || "",
+      bedNo: source.bedno || "",
+    };
+  }, [patientInfo, patientDetails, patientCode]);
 
   const {
     data: initialTableEstimateData = [],
@@ -211,7 +258,7 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tokenNo: authToken,
-          data: { patientCategory: patientInfo?.PatientCategory || 0 }
+          data: { patientCategory: patientInfo?.PatientCategory || patientDetails?.PatientCategory || 0 }
         }),
       });
       if (!res.ok) {
@@ -227,7 +274,7 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
         serviceRate: s.Rate,
       }));
     },
-    enabled: !!authToken && !!patientInfo,
+    enabled: !!authToken && (!!patientInfo || !!patientCode || !!patientRegCode),
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -336,10 +383,10 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
     }
   }
 
-  if (patientLoading) {
+    if (patientLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
-        Loading...
+        Loading patient details...
       </div>
     );
   }
@@ -370,7 +417,7 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Contact / Faculty</p>
-            <p className="text-sm font-medium text-gray-800 dark:text-white">{effectivePatient.facultyName || "N/A"}</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-white">{effectivePatient.mobile || "N/A"} / {effectivePatient.facultyName || "N/A"}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Age / Sex</p>

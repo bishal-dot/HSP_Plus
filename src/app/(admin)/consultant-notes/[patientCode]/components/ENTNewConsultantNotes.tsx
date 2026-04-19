@@ -6,7 +6,7 @@ import {
   Stethoscope, ClipboardList, FileText, Ear, Save,
   Printer, Activity, Eye, Check, X,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { useMutation } from "@tanstack/react-query";
 
@@ -61,11 +61,13 @@ const textareaClass = `${inputClass} resize-none leading-relaxed`;
 
 const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) => {
   const { consultantCode } = useAuthToken();
-    const [patientInfo, setPatientInfo] = useState<any>(null);
-    useEffect(() => {
-        const stored = sessionStorage.getItem("selectedPatient");
-        if (stored) setPatientInfo(JSON.parse(stored));
-      }, []);
+
+  const [patientInfo, setPatientInfo] = useState<any>(null);
+  useEffect(() => {
+      const stored = sessionStorage.getItem("selectedPatient");
+      if (stored) setPatientInfo(JSON.parse(stored));
+    }, []);
+
   const patientId   = patientInfo?.MRNo || patientInfo?.PatientCode || patientInfo?.Mrno;
   const patientNo   = patientInfo?.TokenNo || patientInfo?.IPDCODE;
   const regCode     = patientInfo?.RegNo || patientInfo?.RegCode;
@@ -102,9 +104,52 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
     vertigoBalance: false, tinnitus: false, other: "",
   });
 
+  const [savedImages, setSavedImages] = useState<{
+    R: string;
+    L: string;
+  }>({
+    R: "",
+    L: "",
+  });
+
+  const rightEarCanvasRef = useRef<HTMLCanvasElement>(null);
+  const leftEarCanvasRef = useRef<HTMLCanvasElement>(null);
+
   const selectSide = (key: DiagnosisKey, side: EarSide) =>
     setDiagnosis(prev => ({ ...prev, [key]: prev[key] === side ? "" : side }));
 
+  const uploadEarImage = async (imageDataUrl: string, side: "R" | "L") => {
+    if (!patientId) {
+      toast.error("Patient ID not found");
+      return null;
+    }
+
+    try {
+      const res = await fetch("/api/patient/ent-notes/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: imageDataUrl,
+          patientId,
+          side,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success(`${side} ear image saved successfully`);
+        return result.filePath; 
+      } else {
+        toast.error(result.message || "Failed to save image");
+        return null;
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error while saving image");
+      return null;
+    }
+  };
   const buildPayload = () => {
     const rows: { TypeId: number; InvestigationId: number; Value: string }[] = [];
     rows.push({ TypeId: 1, InvestigationId: 1, Value: procedures.syringingR     ? "1" : "0" });
@@ -128,11 +173,23 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
     });
     if (diagnosis.vertigoBalance) rows.push({ TypeId: 5, InvestigationId: 1, Value: "1" });
     if (diagnosis.tinnitus)       rows.push({ TypeId: 6, InvestigationId: 1, Value: "1" });
-    rows.push({ TypeId: 7, InvestigationId: 1, Value: JSON.stringify(examination.rightEar)  });
-    rows.push({ TypeId: 7, InvestigationId: 2, Value: JSON.stringify(examination.leftEar)   });
-    rows.push({ TypeId: 7, InvestigationId: 3, Value: JSON.stringify(examination.rightNose) });
-    rows.push({ TypeId: 7, InvestigationId: 4, Value: JSON.stringify(examination.leftNose)  });
-    return rows;
+
+     if (savedImages.R) {
+    rows.push({
+      TypeId: 7,
+      InvestigationId: 1,
+      Value: savedImages.R, 
+    });
+  }
+
+  if (savedImages.L) {
+    rows.push({
+      TypeId: 7,
+      InvestigationId: 2,
+      Value: savedImages.L,
+    });
+  }
+  return rows;
   };
 
   const saveNotes = async () => {
@@ -156,16 +213,51 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
     mutationFn: saveNotes,
     onSuccess: () => {
       toast.success("Notes saved successfully.");
+
+       // clear examination drawings
+      setExamination({
+        rightEar: { strokes: [], value: "" },
+        leftEar: { strokes: [], value: "" },
+        rightNose: { strokes: [], value: "" },
+        leftNose: { strokes: [], value: "" },
+      });
+
+      // clear canvas DOM manually
+      if (rightEarCanvasRef.current) {
+        const ctx = rightEarCanvasRef.current.getContext("2d");
+        ctx?.clearRect(0, 0, 128, 128);
+      }
+
+      if (leftEarCanvasRef.current) {
+        const ctx = leftEarCanvasRef.current.getContext("2d");
+        ctx?.clearRect(0, 0, 128, 128);
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to save notes. Please try again.");
     }
   });
 
-  const handleSubmit =  (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    mutate();
-  };
+
+    const rightImage = rightEarCanvasRef.current?.toDataURL("image/png");
+    const leftImage = leftEarCanvasRef.current?.toDataURL("image/png");
+
+    const [rFile, lFile] = await Promise.all([
+      rightImage ? uploadEarImage(rightImage, "R") : null,
+      leftImage ? uploadEarImage(leftImage, "L") : null,
+    ]);
+
+    // store filenames properly
+    setSavedImages({
+      R: rFile || "",
+      L: lFile || "",
+    });
+
+    // small delay to ensure state update before save (important)
+    setTimeout(() => mutate(), 50);
+};
 
   return (
     <>
@@ -252,7 +344,9 @@ const ENTConsultantNotesForm: React.FC<FormProps> = ({ existingNotes, router }) 
                     { side: "L", field: "leftEar"   as ExamFieldKey, placeholder: "512" },
                   ] as const).map(({ side, field, placeholder }) => (
                     <DrawCircle key={side} side={side} field={field} placeholder={placeholder}
-                      examination={examination} setExamination={setExamination} />
+                      examination={examination} setExamination={setExamination}
+                      canvasRef={side === "R" ? rightEarCanvasRef : leftEarCanvasRef}
+                      />
                   ))}
                 </div>
               </div>
@@ -475,26 +569,51 @@ function CheckboxUI({ checked, onChange, id }: { checked: boolean; onChange: (v:
   );
 }
 
-/* ── DrawCircle ── */
-function DrawCircle({ side, field, placeholder, examination, setExamination }: {
-  side: string; field: ExamFieldKey; placeholder: string;
-  examination: any; setExamination: any;
+function DrawCircle({ 
+  side, 
+  field, 
+  placeholder, 
+  examination, 
+  setExamination, 
+  canvasRef
+}: {
+  side: "R" | "L";
+  field: ExamFieldKey; 
+  placeholder: string;
+  examination: any; 
+  setExamination: any;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{side}</span>
+    <div className="flex flex-col items-center gap-3">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+        {side} Ear
+      </span>
+      
       <div className="w-32 h-32 rounded-full border-4 border-slate-700 dark:border-slate-400 bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden shadow-inner">
         <DrawableCanvas
-          width={128} height={128}
+          ref={canvasRef}
+          width={128} 
+          height={128}
           existingStrokes={examination[field].strokes}
           onChange={(strokes: Drawing) =>
-            setExamination((prev: any) => ({ ...prev, [field]: { ...prev[field], strokes } }))
+            setExamination((prev: any) => ({ 
+              ...prev, 
+              [field]: { ...prev[field], strokes } 
+            }))
           }
         />
       </div>
-      <input type="text" value={examination[field].value} placeholder={placeholder}
+
+      <input 
+        type="text" 
+        value={examination[field].value} 
+        placeholder={placeholder}
         onChange={(e) =>
-          setExamination((prev: any) => ({ ...prev, [field]: { ...prev[field], value: e.target.value } }))
+          setExamination((prev: any) => ({ 
+            ...prev, 
+            [field]: { ...prev[field], value: e.target.value } 
+          }))
         }
         className="w-32 px-2.5 py-1.5 rounded-lg text-xs text-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-400 transition-all"
       />

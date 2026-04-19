@@ -1,8 +1,9 @@
-import { Con_GetAsync, DbParameter, GetAsync } from "@/lib/db";
+import { Con_GetAsync, DbParameter, GetAsync, QueryDefault } from "@/lib/db";
 import { ApiRequest, RequiredApiRequest } from "@/types/api.type";
-import { consultantNotesRequest, consultantNotesResponse } from "@/types/consultant-notes.type";
+import { consultantNotesRequest, consultantNotesResponse, earDiagnosisRecordResponse } from "@/types/consultant-notes.type";
 import { masterDbResponseWithToken } from "@/types/masterDb.type";
 import sql from "mssql";
+import { NextRequest } from "next/server";
 
 export async function fetchConsultantNotesFromDb(request:ApiRequest<consultantNotesRequest>) {
     try{
@@ -49,5 +50,21 @@ export async function fetchConsultantNotesFromDb(request:ApiRequest<consultantNo
             message: 'Something went wrong',
         };
     }
-    
+}
+
+export async function getEarDiagnosisRecord(patientId: string): Promise<earDiagnosisRecordResponse[]> {
+  const query = `
+    SELECT 
+      CAST(UkId AS INT) AS UkId,
+      InvestigationId AS code,
+      Value AS EntImage
+    FROM GPHmd_LIVE.dbo.hsp_EarDiagnosisRecord
+    WHERE PatientCode = @PatientCode
+  `;
+
+  const params: DbParameter[] = [
+    { name: 'PatientCode', type: sql.NVarChar(50), value: patientId }
+  ];
+  
+  return await QueryDefault<earDiagnosisRecordResponse>(query, params);
 }

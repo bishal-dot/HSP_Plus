@@ -15,6 +15,16 @@ export interface patientResponse{
     FacultyName: string;
     Age: string;
     PatientCategory: number;
+    Gender?: string;
+    ConsultingDoctor?: string;
+    CONSULTANT?: string;
+    Gphreporting?: string;
+    WARD?: string;
+    RegNo?: string;
+    MRNo?: string;
+    PatientName?: string;
+    patientname?: string;
+    PATIENTNAME?: string;
 }
 export interface patientRequest{
     patientCode?: string;

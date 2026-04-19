@@ -21,3 +21,17 @@ export const fetchConsultantNotesByPatientCode = async (
   const json = await res.json();
   return json.data?.data ?? [];
 };
+
+
+export const fetchEarDiagnosisRecord = async (token: string, patientcode: string) => {
+  const res = await fetch(`/api/patient/consultant-notes/${patientcode}`,{
+      method: "GET", 
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      // body: JSON.stringify({ PATIENTCODE: patientcode }),
+      cache: "no-cache",
+    });
+    return res.json();
+}

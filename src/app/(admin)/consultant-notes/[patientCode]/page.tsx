@@ -147,7 +147,7 @@ function PatientSwitcher({
         `}
       >
         <Users className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Patients</span>
+        <span className="hidden sm:inline">Search Patients</span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 

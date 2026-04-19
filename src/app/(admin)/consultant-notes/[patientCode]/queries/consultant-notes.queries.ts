@@ -1,6 +1,7 @@
-import { fetchConsultantNotesByPatientCode } from "@/app/api/patient/consultant-notes/api";
+import { fetchConsultantNotesByPatientCode, fetchEarDiagnosisRecord } from "@/app/api/patient/consultant-notes/api";
+import { getEarDiagnosisRecord } from "@/services/consultant-notes.service";
 import { ApiResponse } from "@/types/api.type";
-import { consultantNotesResponse } from "@/types/consultant-notes.type";
+import { consultantNotesResponse, earDiagnosisRecordResponse } from "@/types/consultant-notes.type";
 import { useQuery } from "@tanstack/react-query";
 
 export const consultantNotesKeys = { 
@@ -19,3 +20,15 @@ export const useConsultantNotes = (token: string | null, patientcode?: string | 
     staleTime: 1000 * 30,
   })
 };
+
+
+export const useEarImages = (authToken: string, patientId: string) =>
+  useQuery({
+    queryKey: ["ear-images", patientId],
+    enabled: !!patientId && !!authToken,
+    queryFn: async () => {
+      const res = await fetch(`/api/patient/ent-notes/ear-images?patientId=${patientId}`);
+      const data = await res.json();
+      return data.images as { date: string; R?: string; L?: string }[];
+    },
+  });

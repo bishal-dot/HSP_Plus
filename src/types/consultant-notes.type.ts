@@ -26,3 +26,14 @@ export interface consultantNotesResponse {
     Morbiditycode: string | null;
     Morbidityalias: string | null;
 }
+
+export interface earDiagnosisRecordResponse{
+    UkId: number;
+    FiscalYear: string;
+    RegCode: number;
+    PatientCode: string;
+    InvestigationId: number;
+    Value: string;
+    TypeId: number;
+}
+

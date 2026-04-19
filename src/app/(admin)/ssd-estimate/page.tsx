@@ -37,6 +37,8 @@ export default function Dashboard({ children }: { children: React.ReactNode; }) 
     retry: false,
   });
 
+  console.log("patientInfo", patientInfo);
+
   if (patientLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
@@ -99,7 +101,15 @@ export default function Dashboard({ children }: { children: React.ReactNode; }) 
                       </TableCell>
                       <TableCell className="px-3 py-3 text-sm text-gray-700 dark:text-gray-300">
                         {refferred.RefferredStatus == 0 ? (
-                          <Button variant="outline" size="sm" onClick={() => router.push(`/ssd-estimate/${refferred.PatientCode}/${refferred.RegCode}`)}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              // Save full patient row to sessionStorage
+                              sessionStorage.setItem('selectedPatient', JSON.stringify(refferred));
+                              router.push(`/ssd-estimate/${refferred.PatientCode}/${refferred.RegCode}`);
+                            }}
+                          >
                             Edit
                           </Button>
                         ) : (

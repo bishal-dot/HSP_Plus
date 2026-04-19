@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuthToken } from "@/context/AuthContext";
-import { useConsultantNotes } from "@/app/(admin)/consultant-notes/[patientCode]/queries/consultant-notes.queries";
-import { consultantNotesResponse } from "@/types/consultant-notes.type";
+import { useConsultantNotes, useEarImages } from "@/app/(admin)/consultant-notes/[patientCode]/queries/consultant-notes.queries";
+import { consultantNotesResponse, earDiagnosisRecordResponse } from "@/types/consultant-notes.type";
 import {
   FileText, Stethoscope, Activity, ChevronDown, ChevronUp,
   Building2, AlertCircle, Edit, Plus,
@@ -17,6 +17,9 @@ interface Props {
 const PreviousConsultantNotes: React.FC<Props> = ({ patientCode, onCreateNew }) => {
   const { authToken } = useAuthToken();
   const { data, isFetching, isError } = useConsultantNotes(authToken, patientCode);
+  const { data: entImages = [] } = useEarImages(authToken || "", patientCode);
+  console.log(entImages);
+
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const notes: consultantNotesResponse[] = Array.isArray(data) ? data : [];
@@ -183,6 +186,42 @@ const PreviousConsultantNotes: React.FC<Props> = ({ patientCode, onCreateNew }) 
                     <NoteField label="Allergies"          value={note.Allergies}         color="amber"  alert />
                     <NoteField label="Treatment Plan"     value={note.TreatmentPlan}                   />
                     <NoteField label="Recommendation"     value={note.Recommendation}                  />
+
+                    {/* ── Ear diagrams ── */}
+                    {entImages.length > 0 && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Ear Diagrams
+                        </span>
+                        <div className="space-y-3">
+                          {entImages.map((record) => (
+                            <div key={record.date} className="rounded-xl border border-slate-100 dark:border-slate-700/60 p-3 bg-slate-50 dark:bg-slate-800/40">
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
+                                {record.date.replace(/_/g, "-")}
+                              </p>
+                              <div className="flex gap-6">
+                                {(["R", "L"] as const).map((side) =>
+                                  record[side] ? (
+                                    <div key={side} className="flex flex-col items-center gap-1.5">
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                        {side} Ear
+                                      </span>
+                                      <div className="w-20 h-20 rounded-full border-4 border-slate-700 dark:border-slate-400 overflow-hidden bg-white dark:bg-slate-800 shadow-inner">
+                                        <img
+                                          src={record[side]}
+                                          alt={`${side} ear diagram`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    </div>
+                                  ) : null
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

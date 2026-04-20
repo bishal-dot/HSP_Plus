@@ -51,7 +51,6 @@ const OPDDashboard: React.FC = () => {
         cache: 'no-cache',
       });
       const result = await res.json();
-      console.log("Faculty Master", result?.FacultyCode);
       setDeptCode(result?.FacultyCode);
     };
 

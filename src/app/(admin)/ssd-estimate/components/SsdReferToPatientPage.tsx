@@ -94,7 +94,6 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
         throw new Error(errData.message || "Failed to fetch patient info");
       }
       const result = await res.json();
-      console.log("Patient API Raw Response:", result);
       if (!result.success) throw new Error(result.message || "Unexpected response format");
       return result.data;
     },
@@ -179,9 +178,9 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
             (source.FirstName && source.LastName ? `${source.FirstName} ${source.LastName}` : "Unknown"),
       age: source.Age || source.age || "",
       sex: source.Sex || source.Gender || "N/A",
-      mobile: source.Mobile || source.mobile || "",
-      consultant: source.ConsultingDoctor || source.CONSULTANT || "N/A" || source.EstimatedBy,
-      facultyName: source.Gphreporting || source.WARD || source.wardName || "N/A",
+      mobile: source.Mobile || source.mobile || source.ContactNo || "",
+      consultant: source.ConsultingDoctor || source.CONSULTANT || "N/A" || source.EstimatedBy || source.consultant || source.BlockedBy,
+      facultyName: source.Gphreporting || source.WARD || source.wardName ||  source.facultyName || source.FacultyName ||"N/A" ,
       admissionNo: source.AdmissionNo || source.RegNo || "",
       ward: source.wardName || source.WARD || "",
       bedNo: source.bedno || "",
@@ -355,7 +354,7 @@ export default function SsdReferToPatientPage({ patientInfo }: SsdReferToPatient
         remarks: item.remarks,
       }));
       const payload = {
-        patientCode: patientId,
+        patientCode: String(patientId),
         patientRegCode: String(patientRegCode || patientNo),
         totalAmount: estimateDetails.reduce((sum, item) => sum + item.amount, 0),
         isVerified: 0,

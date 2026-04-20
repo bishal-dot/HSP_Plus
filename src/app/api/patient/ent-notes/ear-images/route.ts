@@ -1,5 +1,5 @@
-// /api/patient/ent-notes/ear-images/route.ts
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // Prevents stale results
 
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
@@ -19,26 +19,36 @@ export async function GET(req: NextRequest) {
   }
 
   const files = fs.readdirSync(dir);
-
-  // Group by date: { "2026_01_17": { R: "/uploads/ent/.../..._R_ear.png", L: "..." } }
-  const grouped: Record<string, { R?: string; L?: string }> = {};
+  const grouped: Record<string, { date: string; R?: string; L?: string; unkid?: string }> = {};
 
   for (const file of files) {
     if (!file.endsWith(".png")) continue;
 
-    // filename format: 2026_01_17_R_ear.png
-    const match = file.match(/^(\d{4}_\d{2}_\d{2})_(R|L)_ear\.png$/);
-    if (!match) continue;
+    // A more resilient regex: 
+    // Captures Date (1), Time (2), Side (3), and optionally an unkId (4)
+    const match = file.match(/^(\d{4}_\d{2}_\d{2})_(\d{2}_\d{2}_\d{2})_(R|L)_ear_?(.*?)\.png$/);
+    
+    if (!match) {
+        console.log("File skipped due to regex mismatch:", file);
+        continue;
+    }
 
-    const [, date, side] = match;
-    if (!grouped[date]) grouped[date] = {};
-    grouped[date][side as "R" | "L"] = `/uploads/ent/${patientId}/${file}`;
+    const [, date, time, side, unkId] = match;
+    const sessionKey = `${date}_${time}`;
+
+    if (!grouped[sessionKey]) {
+      grouped[sessionKey] = { 
+        // We format it here so the frontend can display it easily
+        date: `${date}_${time}`, 
+        unkid: unkId || sessionKey 
+      };
+    }
+
+    grouped[sessionKey][side as "R" | "L"] = `/uploads/ent/${patientId}/${file}`;
   }
 
-  // Return as sorted array (newest first)
-  const images = Object.entries(grouped)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, sides]) => ({ date, ...sides }));
+  // Convert to array and sort by sessionKey (string sort works for YYYY_MM_DD_HH_MM_SS)
+  const images = Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
 
   return NextResponse.json({ images });
 }

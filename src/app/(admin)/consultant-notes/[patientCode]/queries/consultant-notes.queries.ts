@@ -31,4 +31,4 @@ export const useEarImages = (authToken: string, patientId: string) =>
       const data = await res.json();
       return data.images as { date: string; R?: string; L?: string }[];
     },
-  });
+});

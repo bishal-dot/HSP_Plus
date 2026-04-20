@@ -17,7 +17,9 @@ interface Props {
 const PreviousConsultantNotes: React.FC<Props> = ({ patientCode, onCreateNew }) => {
   const { authToken } = useAuthToken();
   const { data, isFetching, isError } = useConsultantNotes(authToken, patientCode);
-  const { data: entImages = [] } = useEarImages(authToken || "", patientCode);
+  const { data: earData = [] } = useEarImages(authToken || "", patientCode);
+  const entImages = Array.isArray(earData) ? earData : (earData as any)?.images ?? [];
+
   console.log(entImages);
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -194,8 +196,8 @@ const PreviousConsultantNotes: React.FC<Props> = ({ patientCode, onCreateNew }) 
                           Ear Diagrams
                         </span>
                         <div className="space-y-3">
-                          {entImages.map((record) => (
-                            <div key={record.date} className="rounded-xl border border-slate-100 dark:border-slate-700/60 p-3 bg-slate-50 dark:bg-slate-800/40">
+                          {entImages.map((record:any) => (
+                            <div key={record.unkid} className="rounded-xl border border-slate-100 dark:border-slate-700/60 p-3 bg-slate-50 dark:bg-slate-800/40">
                               <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
                                 {record.date.replace(/_/g, "-")}
                               </p>
@@ -206,7 +208,7 @@ const PreviousConsultantNotes: React.FC<Props> = ({ patientCode, onCreateNew }) 
                                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                                         {side} Ear
                                       </span>
-                                      <div className="w-20 h-20 rounded-full border-4 border-slate-700 dark:border-slate-400 overflow-hidden bg-white dark:bg-slate-800 shadow-inner">
+                                      <div className="w-40 h-40 rounded-full border-4 border-slate-700 dark:border-slate-400 overflow-hidden bg-white dark:bg-slate-800 shadow-inner">
                                         <img
                                           src={record[side]}
                                           alt={`${side} ear diagram`}

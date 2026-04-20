@@ -6,6 +6,7 @@ import { consultantNotesResponse, earDiagnosisRecordResponse } from "@/types/con
 import {
   FileText, Stethoscope, Activity, ChevronDown, ChevronUp,
   Building2, AlertCircle, Edit, Plus,
+  Ear,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -190,25 +191,32 @@ const PreviousConsultantNotes: React.FC<Props> = ({ patientCode, onCreateNew }) 
                     <NoteField label="Recommendation"     value={note.Recommendation}                  />
 
                     {/* ── Ear diagrams ── */}
+                    
                     {entImages.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                          Ear Diagrams
-                        </span>
-                        <div className="space-y-3">
-                          {entImages.map((record:any) => (
-                            <div key={record.unkid} className="rounded-xl border border-slate-100 dark:border-slate-700/60 p-3 bg-slate-50 dark:bg-slate-800/40">
-                              <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
+                      <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Ear className="w-5 h-5 text-rose-500" />
+                          <span className="text-sm font-semibold tracking-tight">Ear Examination Images</span>
+                        </div>
+
+                        <div className="space-y-5">
+                          {entImages.map((record: any, index: number) => (
+                            <div 
+                              key={`${record.date}-${index}`}   // Safe unique key
+                              className="rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5 bg-slate-50 dark:bg-slate-800/50"
+                            >
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-mono">
                                 {record.date.replace(/_/g, "-")}
                               </p>
-                              <div className="flex gap-6">
+
+                              <div className="flex flex-wrap gap-8 justify-center">
                                 {(["R", "L"] as const).map((side) =>
                                   record[side] ? (
-                                    <div key={side} className="flex flex-col items-center gap-1.5">
-                                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                    <div key={side} className="flex flex-col items-center gap-2">
+                                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                         {side} Ear
                                       </span>
-                                      <div className="w-40 h-40 rounded-full border-4 border-slate-700 dark:border-slate-400 overflow-hidden bg-white dark:bg-slate-800 shadow-inner">
+                                      <div className="w-52 h-52 rounded-full border-4 border-slate-600 dark:border-slate-400 overflow-hidden shadow-lg">
                                         <img
                                           src={record[side]}
                                           alt={`${side} ear diagram`}

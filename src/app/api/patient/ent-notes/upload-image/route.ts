@@ -5,36 +5,44 @@ import path from "path";
 import fs from "fs";
 
 export async function POST(req: NextRequest) {
-  const { image, patientId, side, unkId } = await req.json();
+  const { image, patientId, side } = await req.json();   // ← remove unkId
 
   const base64 = image.replace(/^data:image\/\w+;base64,/, "");
   const buffer = Buffer.from(base64, "base64");
 
-  const dateStr = new Date()
-    .toISOString()         // "2026-04-20T06:50:26.000Z"
-    .replace("T", "_")     // "2026-04-20_06:50:26.000Z"
-    .replace(/-/g, "_")    // "2026_04_20_06:50:26.000Z" 
-    .replace(/:/g, "_")    // "2026_04_20_06_50_26.000Z"
-    .split(".")[0]; 
+  const now = new Date();
+  const dateStr = now
+    .toISOString()
+    .replace("T", "_")
+    .replace(/-/g, "_")
+    .replace(/:/g, "_")
+    .split(".")[0];   // e.g. 2026_04_20_07_17_01
 
   const dir = path.join(process.cwd(), `public/uploads/ent/${patientId}`);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  // clean filename
-  const originalName = `${side}_ear`;
+  // --- Generate sequential number (R_ear_1, R_ear_2, etc.) ---
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
 
-  const fileName = `${dateStr}_${originalName}_${unkId || 'unknown'}.png`;
+  // Count how many images already exist for this side on this exact dateStr
+  const existingForThisSideAndDate = files.filter(file => 
+    file.includes(`${dateStr}_${side}_ear`)
+  ).length;
+
+  const sequence = existingForThisSideAndDate + 1;   // 1, 2, 3...
+
+  const fileName = `${dateStr}_${side}_ear_${sequence}.png`;
 
   const filePath = path.join(dir, fileName);
-
   fs.writeFileSync(filePath, buffer);
 
   const url = `/uploads/ent/${patientId}/${fileName}`;
 
-  //  return url
   return NextResponse.json({ 
-    filePath: url
- });
+    filePath: url,
+    date: dateStr,
+    sequence 
+  });
 }

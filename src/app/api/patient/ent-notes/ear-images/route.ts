@@ -19,35 +19,35 @@ export async function GET(req: NextRequest) {
   }
 
   const files = fs.readdirSync(dir);
-  const grouped: Record<string, { date: string; R?: string; L?: string; unkid?: string }> = {};
+
+  const grouped: Record<string, { R?: string; L?: string; date: string }> = {};
 
   for (const file of files) {
     if (!file.endsWith(".png")) continue;
 
-    // A more resilient regex: 
-    // Captures Date (1), Time (2), Side (3), and optionally an unkId (4)
-    const match = file.match(/^(\d{4}_\d{2}_\d{2})_(\d{2}_\d{2}_\d{2})_(R|L)_ear_?(.*?)\.png$/);
-    
-    if (!match) {
-        continue;
+    // New regex to match: 2026_04_20_07_17_01_R_ear_1.png
+    const match = file.match(/^(\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2})_(R|L)_ear_(\d+)\.png$/);
+
+    if (!match) continue;
+
+    const [, fullDateTime, side, sequence] = match;
+    const dateOnly = fullDateTime.split('_').slice(0, 3).join('_'); // 2026_04_20
+
+    if (!grouped[fullDateTime]) {
+      grouped[fullDateTime] = { date: dateOnly, R: undefined, L: undefined };
     }
 
-    const [, date, time, side, unkId] = match;
-    const sessionKey = `${date}_${time}`;
-
-    if (!grouped[sessionKey]) {
-      grouped[sessionKey] = { 
-        // We format it here so the frontend can display it easily
-        date: `${date}_${time}`, 
-        unkid: unkId || sessionKey 
-      };
-    }
-
-    grouped[sessionKey][side as "R" | "L"] = `/uploads/ent/${patientId}/${file}`;
+    grouped[fullDateTime][side as "R" | "L"] = `/uploads/ent/${patientId}/${file}`;
   }
 
-  // Convert to array and sort by sessionKey (string sort works for YYYY_MM_DD_HH_MM_SS)
-  const images = Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
+  // Sort newest first
+  const images = Object.values(grouped)
+    .sort((a, b) => b.date.localeCompare(a.date))   // or use fullDateTime for more precision
+    .map(record => ({
+      date: record.date,
+      R: record.R,
+      L: record.L,
+    }));
 
   return NextResponse.json({ images });
 }

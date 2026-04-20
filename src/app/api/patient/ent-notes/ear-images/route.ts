@@ -29,7 +29,6 @@ export async function GET(req: NextRequest) {
     const match = file.match(/^(\d{4}_\d{2}_\d{2})_(\d{2}_\d{2}_\d{2})_(R|L)_ear_?(.*?)\.png$/);
     
     if (!match) {
-        console.log("File skipped due to regex mismatch:", file);
         continue;
     }
 
